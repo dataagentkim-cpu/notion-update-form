@@ -360,7 +360,7 @@ async function handleSaveBasic(request, env) {
   const dateStr = (body.date || '').trim();
 
   if (!taskId)   return { error: '기본과제를 선택하세요.' };
-  if (!authorId) return { error: '보고자(임원)를 선택하세요.' };
+  if (!authorId) return { error: '작성자(임원)를 선택하세요.' };
   if (!summary)  return { error: '제목을 입력하세요.' };
 
   // 기본 속성 구성 (relation 속성이 아직 없을 수 있어, 제목에 과제명 prefix도 같이 박음)

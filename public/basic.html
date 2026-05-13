@@ -360,7 +360,7 @@
   <form id="updateForm">
     <div class="field-row">
       <div class="field" id="authorField">
-        <label class="field-label" for="author">보고자(임원) <span class="req">*</span></label>
+        <label class="field-label" for="author">작성자(임원) <span class="req">*</span></label>
         <select id="author" class="select" required disabled>
           <option value="">불러오는 중...</option>
         </select>
@@ -683,7 +683,7 @@
 
     const taskId = selectedInitiativeId();
     if (!currentAuthorId) {
-      showStatus('❌ 보고자를 선택하세요.', 'error');
+      showStatus('❌ 작성자를 선택하세요.', 'error');
       return;
     }
     if (!taskId) {
