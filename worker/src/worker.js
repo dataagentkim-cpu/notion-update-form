@@ -28,7 +28,7 @@ const SU_PROP_INITIATIVE = '전략과제 명 1';
 const EX_PROP_NAME = '성명';
 const INIT_PROP_NAME = '전략과제명';
 // 전략과제 DB에서 임원과 연결된 relation 속성 후보들 (둘 중 하나라도 매칭되면 본인 과제로 인정)
-const INIT_PROP_OWNER_CANDIDATES = ['담당임원', '참여임원'];
+const INIT_PROP_OWNER_CANDIDATES = ['담당 임원', '참여 임원'];
 
 export default {
   async fetch(request, env) {
