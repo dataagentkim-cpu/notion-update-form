@@ -93,12 +93,19 @@ function jsonResponse(body, env, status = 200) {
 }
 
 async function notion(path, init, env) {
+  // body가 string이면 UTF-8 바이트로 변환해 charset 명시
+  let body = init && init.body;
+  if (typeof body === 'string') {
+    body = new TextEncoder().encode(body);
+  }
   const res = await fetch(`${NOTION_API}${path}`, {
     ...init,
+    body,
     headers: {
       Authorization: `Bearer ${env.NOTION_TOKEN}`,
       'Notion-Version': NOTION_VERSION,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
       ...(init && init.headers),
     },
   });
@@ -249,10 +256,10 @@ async function handleSave(request, env) {
 
 // 기본과제 업데이트 이력 DB 컬럼
 const BH_PROP_TITLE = '제목';
-const BH_PROP_REPORTER = '보고자';
+const BH_PROP_REPORTER = '작성자'; // (구버전: '보고자')
 const BH_PROP_DATE = '작성일자';
 const BH_PROP_CONTENT = '상세내용';
-const BH_PROP_TASK = '기본과제'; // 사용자가 나중에 relation 속성으로 추가 예정
+const BH_PROP_TASK = '기본과제';
 
 // 기본과제 DB에서 임원과 연결된 relation 속성 후보 (있는 만큼 OR로 매칭)
 const BASIC_OWNER_PROP_CANDIDATES = ['담당 임원', '담당임원', '참여 임원', '참여임원'];
