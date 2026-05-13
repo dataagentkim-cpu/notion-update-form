@@ -1,26 +1,25 @@
 /**
  * Cloudflare Worker — Notion Update Form backend
  *
- * Receives form submissions from the public HTML form (GitHub Pages) and
- * forwards them to the Notion API.
- *
  * Endpoints:
- *   POST /api/save        — create a new row in 전략과제 업데이트 이력
+ *   GET  /api/bootstrap                       — 임원 리스트 반환
+ *   GET  /api/initiatives?executive_id=<id>   — 해당 임원이 담당/참여 중인 전략과제 반환
+ *   POST /api/save                            — 전략과제 업데이트 이력에 1행 생성
+ *   GET  /api/health                          — 헬스 체크
  *
- * Required environment variables (set via `wrangler secret`):
+ * Required env (wrangler.toml [vars] / wrangler secret):
  *   NOTION_TOKEN                    — Notion integration token (secret)
- *   STATUS_UPDATES_DATA_SOURCE_ID   — data source UUID
- *   INITIATIVES_DATA_SOURCE_ID      — data source UUID for 전략과제
- *   EXECUTIVES_DATA_SOURCE_ID       — data source UUID for 임원 리스트
- *   ALLOWED_ORIGIN                  — your GitHub Pages origin (e.g. https://dataagentkim-cpu.github.io)
- *                                     or "*" to allow any origin (less safe)
+ *   STATUS_UPDATES_DATA_SOURCE_ID   — 업데이트 이력 data source UUID
+ *   INITIATIVES_DATA_SOURCE_ID      — 전략과제 data source UUID
+ *   EXECUTIVES_DATA_SOURCE_ID       — 임원 리스트 data source UUID
+ *   ALLOWED_ORIGIN                  — GitHub Pages origin
  */
 
 const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2025-09-03';
 
 // Property names — adjust if your Notion schema uses different names.
-const SU_PROP_TITLE = '전략과제명';        // title column on Status Updates (used to be 전략과제 명)
+const SU_PROP_TITLE = '전략과제명';
 const SU_PROP_SUMMARY = '요약제목';
 const SU_PROP_CONTENT = '상세내용';
 const SU_PROP_DATE = '작성일자';
@@ -28,22 +27,33 @@ const SU_PROP_AUTHOR = '작성자';
 const SU_PROP_INITIATIVE = '전략과제 명 1';
 const EX_PROP_NAME = '성명';
 const INIT_PROP_NAME = '전략과제명';
+// 전략과제 DB에서 임원과 연결된 relation 속성 후보들 (둘 중 하나라도 매칭되면 본인 과제로 인정)
+const INIT_PROP_OWNER_CANDIDATES = ['담당임원', '참여임원'];
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders(env) });
     }
 
-    if (url.pathname === '/api/save' && request.method === 'POST') {
-      return jsonResponse(await handleSave(request, env), env);
-    }
-
-    if (url.pathname === '/api/health') {
-      return jsonResponse({ ok: true, time: new Date().toISOString() }, env);
+    try {
+      if (url.pathname === '/api/bootstrap' && request.method === 'GET') {
+        return jsonResponse(await handleBootstrap(env), env);
+      }
+      if (url.pathname === '/api/initiatives' && request.method === 'GET') {
+        const executiveId = url.searchParams.get('executive_id');
+        return jsonResponse(await handleInitiatives(executiveId, env), env);
+      }
+      if (url.pathname === '/api/save' && request.method === 'POST') {
+        return jsonResponse(await handleSave(request, env), env);
+      }
+      if (url.pathname === '/api/health') {
+        return jsonResponse({ ok: true, time: new Date().toISOString() }, env);
+      }
+    } catch (e) {
+      return jsonResponse({ error: e.message || String(e) }, env, 500);
     }
 
     return jsonResponse({ error: 'Not found' }, env, 404);
@@ -89,34 +99,74 @@ async function notion(path, init, env) {
   return data;
 }
 
-async function findPageByTitle(dataSourceId, titlePropName, query, env) {
-  if (!query) return null;
-  const trimmed = query.trim();
-  if (!trimmed) return null;
-  const res = await notion(`/data_sources/${dataSourceId}/query`, {
-    method: 'POST',
-    body: JSON.stringify({
-      filter: {
-        property: titlePropName,
-        title: { contains: trimmed },
-      },
-      page_size: 5,
-    }),
-  }, env);
-  const results = res.results || [];
-  if (results.length === 0) return null;
-  // Prefer exact match on title
-  for (const p of results) {
-    const t = readTitle(p, titlePropName);
-    if (t === trimmed) return p;
-  }
-  return results[0];
-}
-
 function readTitle(page, propName) {
   const prop = (page.properties || {})[propName];
   if (!prop || prop.type !== 'title') return '';
   return (prop.title || []).map((s) => s.plain_text || '').join('');
+}
+
+async function queryAll(dataSourceId, body, env) {
+  const results = [];
+  let cursor;
+  do {
+    const payload = { ...body, page_size: 100 };
+    if (cursor) payload.start_cursor = cursor;
+    const res = await notion(`/data_sources/${dataSourceId}/query`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, env);
+    results.push(...(res.results || []));
+    cursor = res.has_more ? res.next_cursor : null;
+  } while (cursor);
+  return results;
+}
+
+async function handleBootstrap(env) {
+  const pages = await queryAll(env.EXECUTIVES_DATA_SOURCE_ID, {
+    sorts: [{ property: EX_PROP_NAME, direction: 'ascending' }],
+  }, env);
+  const executives = pages
+    .map((p) => ({ id: p.id, name: readTitle(p, EX_PROP_NAME) }))
+    .filter((e) => e.name);
+  return { executives };
+}
+
+async function handleInitiatives(executiveId, env) {
+  if (!executiveId) return { error: 'executive_id 가 필요합니다.' };
+
+  // 담당임원 또는 참여임원 relation 중 어느 한쪽이라도 해당 임원을 포함하면 본인 과제
+  const orFilters = INIT_PROP_OWNER_CANDIDATES.map((prop) => ({
+    property: prop,
+    relation: { contains: executiveId },
+  }));
+
+  let pages;
+  try {
+    pages = await queryAll(env.INITIATIVES_DATA_SOURCE_ID, {
+      filter: { or: orFilters },
+      sorts: [{ property: INIT_PROP_NAME, direction: 'ascending' }],
+    }, env);
+  } catch (e) {
+    // 두 속성 중 하나가 없는 경우를 대비해 fallback (각각 단독으로 시도)
+    pages = [];
+    const seen = new Set();
+    for (const prop of INIT_PROP_OWNER_CANDIDATES) {
+      try {
+        const part = await queryAll(env.INITIATIVES_DATA_SOURCE_ID, {
+          filter: { property: prop, relation: { contains: executiveId } },
+          sorts: [{ property: INIT_PROP_NAME, direction: 'ascending' }],
+        }, env);
+        for (const p of part) {
+          if (!seen.has(p.id)) { seen.add(p.id); pages.push(p); }
+        }
+      } catch { /* 속성 미존재 등은 무시 */ }
+    }
+  }
+
+  const initiatives = pages
+    .map((p) => ({ id: p.id, name: readTitle(p, INIT_PROP_NAME) }))
+    .filter((i) => i.name);
+  return { initiatives };
 }
 
 async function handleSave(request, env) {
@@ -124,65 +174,37 @@ async function handleSave(request, env) {
   try { body = await request.json(); }
   catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
 
-  const initiative = (body.initiative || '').trim();
+  const initiativeId = (body.initiative_id || '').trim();
+  const authorId = (body.author_id || '').trim();
+  const initiativeName = (body.initiative_name || '').trim();
+  const authorName = (body.author_name || '').trim();
   const summary = (body.summary || '').trim();
   const content = (body.content || '').trim();
   const dateStr = (body.date || '').trim();
-  const author = (body.author || '').trim();
 
-  if (!initiative) return { error: '전략과제명을 입력하세요.' };
-  if (!summary)    return { error: '요약 제목을 입력하세요.' };
-  if (!author)     return { error: '작성자(이름)를 입력하세요.' };
+  if (!initiativeId) return { error: '전략과제를 선택하세요.' };
+  if (!authorId)    return { error: '작성자(임원)를 선택하세요.' };
+  if (!summary)     return { error: '요약 제목을 입력하세요.' };
 
   const warnings = [];
 
-  // Lookup initiative
-  let initiativePage = null;
-  try {
-    initiativePage = await findPageByTitle(env.INITIATIVES_DATA_SOURCE_ID, INIT_PROP_NAME, initiative, env);
-  } catch (e) {
-    warnings.push(`전략과제 조회 실패: ${e.message}`);
-  }
-  if (!initiativePage) {
-    warnings.push(`'${initiative}' 와 매칭되는 전략과제를 못 찾아 관계는 비웠습니다.`);
-  }
-
-  // Lookup author (executive)
-  let authorPage = null;
-  try {
-    authorPage = await findPageByTitle(env.EXECUTIVES_DATA_SOURCE_ID, EX_PROP_NAME, author, env);
-  } catch (e) {
-    warnings.push(`작성자 조회 실패: ${e.message}`);
-  }
-  if (!authorPage) {
-    warnings.push(`'${author}' 와 매칭되는 임원을 못 찾아 작성자는 비웠습니다.`);
-  }
-
-  // Construct properties
   const properties = {
     [SU_PROP_TITLE]: {
-      title: [{ text: { content: `${initiative} - ${summary}` } }],
+      title: [{ text: { content: `${initiativeName || '전략과제'} - ${summary}` } }],
     },
     [SU_PROP_SUMMARY]: {
       rich_text: [{ text: { content: summary } }],
     },
+    [SU_PROP_INITIATIVE]: { relation: [{ id: initiativeId }] },
+    [SU_PROP_AUTHOR]: { relation: [{ id: authorId }] },
   };
   if (content) {
-    properties[SU_PROP_CONTENT] = {
-      rich_text: [{ text: { content } }],
-    };
+    properties[SU_PROP_CONTENT] = { rich_text: [{ text: { content } }] };
   }
   if (dateStr) {
     properties[SU_PROP_DATE] = { date: { start: dateStr } };
   }
-  if (initiativePage) {
-    properties[SU_PROP_INITIATIVE] = { relation: [{ id: initiativePage.id }] };
-  }
-  if (authorPage) {
-    properties[SU_PROP_AUTHOR] = { relation: [{ id: authorPage.id }] };
-  }
 
-  // Create page
   const created = await notion('/pages', {
     method: 'POST',
     body: JSON.stringify({

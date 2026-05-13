@@ -115,7 +115,7 @@
     .field-row { grid-template-columns: 1fr 1fr; }
   }
 
-  .input, .textarea {
+  .input, .textarea, .select {
     width: 100%;
     padding: 12px 13px;
     background: var(--input-bg);
@@ -130,12 +130,19 @@
     -webkit-appearance: none;
     appearance: none;
   }
+  .select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
+    padding-right: 36px;
+  }
+  .select:disabled { opacity: 0.55; cursor: not-allowed; }
   .textarea {
     resize: vertical;
     min-height: 130px;
     line-height: 1.55;
   }
-  .input:focus, .textarea:focus {
+  .input:focus, .textarea:focus, .select:focus {
     outline: none;
     border-color: var(--input-focus);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
@@ -225,11 +232,24 @@
   </header>
 
   <form id="updateForm">
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="author">작성자(임원) <span class="req">*</span></label>
+        <select id="author" class="select" required disabled>
+          <option value="">불러오는 중...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="date">작성일자</label>
+        <input id="date" class="input" type="date"/>
+      </div>
+    </div>
+
     <div class="field">
       <label class="field-label" for="initiative">전략과제명 <span class="req">*</span></label>
-      <input id="initiative" class="input" type="text" required
-             placeholder="예) AI 기반 언더라이팅 자동화" autocomplete="off"
-             inputmode="text" autocapitalize="off"/>
+      <select id="initiative" class="select" required disabled>
+        <option value="">먼저 작성자를 선택하세요</option>
+      </select>
     </div>
 
     <div class="field">
@@ -247,18 +267,6 @@
                 placeholder="예) 저번주에 1차 테스트 돌렸고 정확도 82% 나옴. 데이터팀이랑 추가 피쳐 논의했고 다음달 파일럿 들어갈 예정. 예산 추가 필요할 수도 있음."></textarea>
     </div>
 
-    <div class="field-row">
-      <div class="field">
-        <label class="field-label" for="date">작성일자</label>
-        <input id="date" class="input" type="date"/>
-      </div>
-      <div class="field">
-        <label class="field-label" for="author">작성자 <span class="req">*</span></label>
-        <input id="author" class="input" type="text" required
-               placeholder="예) 김준승" autocomplete="name"/>
-      </div>
-    </div>
-
     <div class="actions">
       <button type="button" id="btnAI" class="btn" disabled title="준비 중">✨ AI로 다듬기<span class="ai-hint">(v2)</span></button>
       <button type="submit" id="btnSave" class="btn btn-primary">💾 Notion에 저장</button>
@@ -271,18 +279,24 @@
 
 <script>
   const WORKER_URL = 'https://notion-update-form.dataagentkim.workers.dev';
+  const LS_AUTHOR_KEY = 'notion-update-form/last-author-id';
 
   const $ = (id) => document.getElementById(id);
   const form = $('updateForm');
   const dateInput = $('date');
+  const authorSel = $('author');
+  const initiativeSel = $('initiative');
   const status = $('status');
   const btnSave = $('btnSave');
   const btnReset = $('btnReset');
 
-  // Default 작성일자 = today (local)
-  const now = new Date();
-  const offsetMs = now.getTimezoneOffset() * 60000;
-  dateInput.value = new Date(now - offsetMs).toISOString().slice(0, 10);
+  // 작성일자 = 오늘 (로컬)
+  const offsetMs = new Date().getTimezoneOffset() * 60000;
+  const todayStr = () => new Date(Date.now() - offsetMs).toISOString().slice(0, 10);
+  dateInput.value = todayStr();
+
+  let executiveMap = new Map(); // id -> name
+  let initiativeMap = new Map(); // id -> name
 
   function showStatus(message, type) {
     status.textContent = message;
@@ -296,9 +310,83 @@
     status.textContent = '';
   }
 
+  function setOptions(select, items, placeholder) {
+    const frag = document.createDocumentFragment();
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder;
+    frag.appendChild(ph);
+    for (const it of items) {
+      const opt = document.createElement('option');
+      opt.value = it.id;
+      opt.textContent = it.name;
+      frag.appendChild(opt);
+    }
+    select.innerHTML = '';
+    select.appendChild(frag);
+  }
+
+  async function loadExecutives() {
+    try {
+      const res = await fetch(WORKER_URL + '/api/bootstrap');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      const list = data.executives || [];
+      executiveMap = new Map(list.map((e) => [e.id, e.name]));
+      setOptions(authorSel, list, '임원을 선택하세요');
+      authorSel.disabled = false;
+
+      // 직전에 선택한 임원 복원
+      const last = localStorage.getItem(LS_AUTHOR_KEY);
+      if (last && executiveMap.has(last)) {
+        authorSel.value = last;
+        await loadInitiatives(last);
+      }
+    } catch (err) {
+      setOptions(authorSel, [], '임원 로드 실패');
+      showStatus('❌ 임원 목록 로드 실패: ' + err.message, 'error');
+    }
+  }
+
+  async function loadInitiatives(executiveId) {
+    if (!executiveId) {
+      initiativeMap = new Map();
+      setOptions(initiativeSel, [], '먼저 작성자를 선택하세요');
+      initiativeSel.disabled = true;
+      return;
+    }
+    initiativeSel.disabled = true;
+    setOptions(initiativeSel, [], '불러오는 중...');
+    try {
+      const res = await fetch(WORKER_URL + '/api/initiatives?executive_id=' + encodeURIComponent(executiveId));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      const list = data.initiatives || [];
+      initiativeMap = new Map(list.map((i) => [i.id, i.name]));
+      if (list.length === 0) {
+        setOptions(initiativeSel, [], '본인 과제가 없습니다');
+        initiativeSel.disabled = true;
+      } else {
+        setOptions(initiativeSel, list, '전략과제를 선택하세요');
+        initiativeSel.disabled = false;
+      }
+    } catch (err) {
+      setOptions(initiativeSel, [], '과제 로드 실패');
+      initiativeSel.disabled = true;
+      showStatus('❌ 전략과제 목록 로드 실패: ' + err.message, 'error');
+    }
+  }
+
+  authorSel.addEventListener('change', () => {
+    const id = authorSel.value;
+    if (id) localStorage.setItem(LS_AUTHOR_KEY, id);
+    loadInitiatives(id);
+  });
+
   btnReset.addEventListener('click', () => {
-    form.reset();
-    dateInput.value = new Date(Date.now() - offsetMs).toISOString().slice(0, 10);
+    $('summary').value = '';
+    $('content').value = '';
+    dateInput.value = todayStr();
     hideStatus();
   });
 
@@ -310,11 +398,13 @@
     btnSave.innerHTML = '⏳ 저장 중...';
 
     const payload = {
-      initiative: $('initiative').value.trim(),
+      initiative_id: initiativeSel.value,
+      initiative_name: initiativeMap.get(initiativeSel.value) || '',
+      author_id: authorSel.value,
+      author_name: executiveMap.get(authorSel.value) || '',
       summary: $('summary').value.trim(),
       content: $('content').value.trim(),
       date: dateInput.value,
-      author: $('author').value.trim(),
     };
 
     try {
@@ -330,7 +420,7 @@
       const msg = '✅ Notion에 저장되었습니다.' + (warnings ? ' (' + warnings + ')' : '');
       showStatus(msg, 'success');
 
-      // Soft-reset: keep 작성자/전략과제명 for repeated entries
+      // Soft-reset: keep 작성자/전략과제 for repeated entries
       $('summary').value = '';
       $('content').value = '';
     } catch (err) {
@@ -340,6 +430,8 @@
       btnSave.innerHTML = originalText;
     }
   });
+
+  loadExecutives();
 </script>
 </body>
 </html>
