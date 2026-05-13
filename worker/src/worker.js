@@ -25,8 +25,10 @@ const SU_PROP_CONTENT = '상세내용';
 const SU_PROP_DATE = '작성일자';
 const SU_PROP_AUTHOR = '작성자';
 const SU_PROP_INITIATIVE = '전략과제 명 1';
+const SU_PROP_DAEBUNRYU = '전략과제_대분류'; // 대시보드 그룹핑용 (전략과제에서 복사)
 const EX_PROP_NAME = '성명';
 const INIT_PROP_NAME = '전략과제명';
+const INIT_PROP_DAEBUNRYU = '전략과제_대분류';
 // 전략과제 DB에서 임원과 연결된 relation 속성 후보들 (둘 중 하나라도 매칭되면 본인 과제로 인정)
 const INIT_PROP_OWNER_CANDIDATES = ['담당 임원', '참여 임원'];
 
@@ -188,6 +190,16 @@ async function handleSave(request, env) {
 
   const warnings = [];
 
+  // 선택한 전략과제의 대분류를 가져와 함께 세팅 (대시보드 그룹핑 위해 필요)
+  let daebunRelation = [];
+  try {
+    const initPage = await notion(`/pages/${initiativeId}`, {}, env);
+    const rel = initPage.properties?.[INIT_PROP_DAEBUNRYU]?.relation || [];
+    daebunRelation = rel.map((r) => ({ id: r.id }));
+  } catch (e) {
+    warnings.push(`전략과제 대분류 조회 실패: ${e.message}`);
+  }
+
   const properties = {
     [SU_PROP_TITLE]: {
       title: [{ text: { content: `${initiativeName || '전략과제'} - ${summary}` } }],
@@ -198,6 +210,9 @@ async function handleSave(request, env) {
     [SU_PROP_INITIATIVE]: { relation: [{ id: initiativeId }] },
     [SU_PROP_AUTHOR]: { relation: [{ id: authorId }] },
   };
+  if (daebunRelation.length > 0) {
+    properties[SU_PROP_DAEBUNRYU] = { relation: daebunRelation };
+  }
   if (content) {
     properties[SU_PROP_CONTENT] = { rich_text: [{ text: { content } }] };
   }
