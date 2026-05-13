@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
 <title>전략과제 업데이트 입력</title>
 <style>
@@ -27,6 +27,8 @@
     --required:     #ef4444;
     --badge-bg:     #ede9fe;
     --badge-text:   #6d28d9;
+    --primary-bg:   #18181b;
+    --primary-text: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -43,49 +45,53 @@
       --danger-bg:    rgba(239, 68, 68, 0.2);
       --badge-bg:     rgba(109, 40, 217, 0.3);
       --badge-text:   #c4b5fd;
+      --primary-bg:   #f4f4f5;
+      --primary-text: #18181b;
     }
   }
 
-  body {
+  html, body {
     background: transparent;
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.011em;
-    padding: 24px 20px 36px;
+  }
+  body {
+    padding: 16px 14px calc(28px + env(safe-area-inset-bottom));
   }
   .container {
-    max-width: 720px;
+    max-width: 680px;
     margin: 0 auto;
   }
 
   /* Header */
   .header {
-    display: flex; align-items: flex-start; gap: 12px;
-    margin-bottom: 24px;
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 18px;
   }
   .header-icon {
     flex-shrink: 0;
-    width: 36px; height: 36px;
+    width: 32px; height: 32px;
     border-radius: 8px;
     border: 1.5px solid var(--card-border);
     background: var(--card-bg);
   }
-  .header-text { flex: 1; }
+  .header-text { flex: 1; min-width: 0; }
   .header-title {
-    font-size: 22px; font-weight: 700; line-height: 1.3;
+    font-size: 19px; font-weight: 700; line-height: 1.3;
     letter-spacing: -0.02em;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   .header-sub {
-    font-size: 13px; color: var(--text-secondary);
+    font-size: 12.5px; color: var(--text-secondary);
     line-height: 1.5;
   }
 
   /* Fields */
-  .field { margin-bottom: 18px; }
+  .field { margin-bottom: 14px; }
   .field-label {
-    display: flex; align-items: center; gap: 6px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
     font-size: 13px; font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 6px;
@@ -93,29 +99,40 @@
   .req { color: var(--required); font-weight: 700; }
   .badge {
     display: inline-block;
-    padding: 2px 8px;
+    padding: 2px 7px;
     background: var(--badge-bg);
     color: var(--badge-text);
-    font-size: 11px; font-weight: 500;
+    font-size: 10.5px; font-weight: 500;
     border-radius: 10px;
   }
 
-  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media (min-width: 520px) {
+    .field-row { grid-template-columns: 1fr 1fr; }
+  }
 
   .input, .textarea {
     width: 100%;
-    padding: 11px 13px;
+    padding: 12px 13px;
     background: var(--input-bg);
     border: 1.5px solid var(--input-border);
-    border-radius: 8px;
+    border-radius: 9px;
     font-family: inherit;
-    font-size: 14px;
+    /* 16px prevents iOS Safari from zooming on focus */
+    font-size: 16px;
+    line-height: 1.4;
     color: var(--text-primary);
     transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .textarea {
     resize: vertical;
-    min-height: 120px;
+    min-height: 130px;
     line-height: 1.55;
   }
   .input:focus, .textarea:focus {
@@ -126,50 +143,57 @@
   .input::placeholder, .textarea::placeholder {
     color: var(--text-tertiary);
   }
+  /* Make date input look consistent */
+  input[type="date"] {
+    min-height: 46px;
+  }
 
   /* Buttons */
   .actions {
-    display: flex; gap: 10px; flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
     margin-top: 18px;
   }
+  @media (min-width: 520px) {
+    .actions { grid-template-columns: auto 1fr auto; }
+  }
   .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 10px 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    min-height: 46px;
+    padding: 0 18px;
     background: var(--card-bg);
     border: 1.5px solid var(--input-border);
-    border-radius: 8px;
+    border-radius: 10px;
     font-family: inherit;
-    font-size: 14px; font-weight: 500;
+    font-size: 15px; font-weight: 600;
     color: var(--text-primary);
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, transform 0.05s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   .btn:hover { border-color: var(--text-secondary); }
-  .btn:active { transform: scale(0.98); }
+  .btn:active { transform: scale(0.985); }
   .btn:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
   .btn-primary {
-    background: #18181b;
-    color: #ffffff;
-    border-color: #18181b;
+    background: var(--primary-bg);
+    color: var(--primary-text);
+    border-color: var(--primary-bg);
   }
-  .btn-primary:hover { background: #27272a; border-color: #27272a; }
-  @media (prefers-color-scheme: dark) {
-    .btn-primary {
-      background: #f4f4f5;
-      color: #18181b;
-      border-color: #f4f4f5;
-    }
-    .btn-primary:hover { background: #e4e4e7; border-color: #e4e4e7; }
+  .btn-primary:hover {
+    filter: brightness(1.08);
   }
 
   /* Status banner */
   .status {
-    margin-top: 16px;
+    margin-top: 14px;
     padding: 12px 14px;
-    border-radius: 8px;
+    border-radius: 9px;
     font-size: 14px;
     line-height: 1.5;
     display: none;
@@ -179,10 +203,14 @@
   .status-error   { background: var(--danger-bg);  color: var(--danger); }
   .status-info    { background: var(--accent-bg);  color: var(--accent); }
 
-  /* Hint for AI button when disabled */
   .ai-hint {
     font-size: 11px; color: var(--text-tertiary);
-    margin-left: 4px;
+    margin-left: 2px;
+  }
+
+  /* Reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
   }
 </style>
 </head>
@@ -200,13 +228,15 @@
     <div class="field">
       <label class="field-label" for="initiative">전략과제명 <span class="req">*</span></label>
       <input id="initiative" class="input" type="text" required
-             placeholder="예) AI 기반 언더라이팅 자동화" autocomplete="off"/>
+             placeholder="예) AI 기반 언더라이팅 자동화" autocomplete="off"
+             inputmode="text" autocapitalize="off"/>
     </div>
 
     <div class="field">
       <label class="field-label" for="summary">요약 제목 <span class="req">*</span></label>
       <input id="summary" class="input" type="text" required
-             placeholder="예) 1분기 PoC 완료 및 2분기 파일럿 계획 확정"/>
+             placeholder="예) 1분기 PoC 완료 및 2분기 파일럿 계획 확정"
+             autocomplete="off"/>
     </div>
 
     <div class="field">
@@ -225,23 +255,21 @@
       <div class="field">
         <label class="field-label" for="author">작성자 <span class="req">*</span></label>
         <input id="author" class="input" type="text" required
-               placeholder="예) 김준승" autocomplete="off"/>
+               placeholder="예) 김준승" autocomplete="name"/>
       </div>
     </div>
 
     <div class="actions">
-      <button type="button" id="btnAI" class="btn" disabled title="준비 중">✨ AI로 다듬기 <span class="ai-hint">(v2)</span></button>
+      <button type="button" id="btnAI" class="btn" disabled title="준비 중">✨ AI로 다듬기<span class="ai-hint">(v2)</span></button>
       <button type="submit" id="btnSave" class="btn btn-primary">💾 Notion에 저장</button>
       <button type="button" id="btnReset" class="btn">초기화</button>
     </div>
 
-    <div id="status" class="status"></div>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
   </form>
 </div>
 
 <script>
-  // Worker endpoint (replace with your deployed URL after Cloudflare deploy)
-  // Example: https://notion-update-form.<your-subdomain>.workers.dev
   const WORKER_URL = 'https://notion-update-form.dataagentkim.workers.dev';
 
   const $ = (id) => document.getElementById(id);
@@ -251,12 +279,17 @@
   const btnSave = $('btnSave');
   const btnReset = $('btnReset');
 
-  // Default 작성일자 = today
-  dateInput.value = new Date().toISOString().slice(0, 10);
+  // Default 작성일자 = today (local)
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60000;
+  dateInput.value = new Date(now - offsetMs).toISOString().slice(0, 10);
 
   function showStatus(message, type) {
     status.textContent = message;
     status.className = 'status show status-' + type;
+    if (type === 'success') {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    }
   }
   function hideStatus() {
     status.className = 'status';
@@ -265,7 +298,7 @@
 
   btnReset.addEventListener('click', () => {
     form.reset();
-    dateInput.value = new Date().toISOString().slice(0, 10);
+    dateInput.value = new Date(Date.now() - offsetMs).toISOString().slice(0, 10);
     hideStatus();
   });
 
@@ -290,14 +323,14 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
 
       const warnings = (data.warnings || []).join(' / ');
       const msg = '✅ Notion에 저장되었습니다.' + (warnings ? ' (' + warnings + ')' : '');
       showStatus(msg, 'success');
 
-      // Soft-reset content fields (keep author/initiative for repeated entries)
+      // Soft-reset: keep 작성자/전략과제명 for repeated entries
       $('summary').value = '';
       $('content').value = '';
     } catch (err) {
