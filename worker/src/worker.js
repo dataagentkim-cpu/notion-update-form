@@ -218,9 +218,15 @@ async function handleSave(request, env) {
     warnings.push(`전략과제 대분류 조회 실패: ${e.message}`);
   }
 
+  const initiativeUrl = `https://www.notion.so/${initiativeId.replace(/-/g, '')}`;
   const properties = {
     [SU_PROP_TITLE]: {
-      title: [{ text: { content: initiativeName || '전략과제' } }],
+      title: [{
+        text: {
+          content: initiativeName || '전략과제',
+          link: { url: initiativeUrl },
+        },
+      }],
     },
     [SU_PROP_SUMMARY]: {
       rich_text: [{ text: { content: summary } }],
