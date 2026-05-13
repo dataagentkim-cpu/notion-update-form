@@ -220,7 +220,7 @@ async function handleSave(request, env) {
 
   const properties = {
     [SU_PROP_TITLE]: {
-      title: [{ text: { content: `${initiativeName || '전략과제'} - ${summary}` } }],
+      title: [{ text: { content: initiativeName || '전략과제' } }],
     },
     [SU_PROP_SUMMARY]: {
       rich_text: [{ text: { content: summary } }],
