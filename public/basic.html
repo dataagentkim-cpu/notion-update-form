@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
-<title>전략과제 업데이트 입력</title>
+<title>기본과제 업데이트 입력</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -296,15 +296,15 @@
   <header class="header">
     <div class="header-icon"></div>
     <div class="header-text">
-      <h1 class="header-title">전략과제 업데이트 입력</h1>
-      <p class="header-sub">본인의 과제 진행 상황을 빠르게 기록하세요 — Notion DB에 바로 저장됩니다.</p>
+      <h1 class="header-title">기본과제 업데이트 입력</h1>
+      <p class="header-sub">본인 페이지의 기본과제 진행 상황을 기록하세요 — 기본과제 업데이트 이력 DB에 저장됩니다.</p>
     </div>
   </header>
 
   <form id="updateForm">
     <div class="field-row">
       <div class="field" id="authorField">
-        <label class="field-label" for="author">작성자(임원) <span class="req">*</span></label>
+        <label class="field-label" for="author">보고자(임원) <span class="req">*</span></label>
         <select id="author" class="select" required disabled>
           <option value="">불러오는 중...</option>
         </select>
@@ -319,16 +319,16 @@
     </div>
 
     <div class="field">
-      <label class="field-label">전략과제명 <span class="req">*</span></label>
+      <label class="field-label">기본과제 <span class="req">*</span></label>
       <div id="initiativeList" class="radio-list">
-        <div class="radio-empty">먼저 작성자를 선택하세요</div>
+        <div class="radio-empty">기본과제 DB 로딩 중...</div>
       </div>
     </div>
 
     <div class="field">
-      <label class="field-label" for="summary">요약 제목 <span class="req">*</span></label>
+      <label class="field-label" for="summary">제목 <span class="req">*</span></label>
       <input id="summary" class="input" type="text" required
-             placeholder="예) 1분기 PoC 완료 및 2분기 파일럿 계획 확정"
+             placeholder="예) 데이터 생태계 확장 전략 수립"
              autocomplete="off"/>
     </div>
 
@@ -367,9 +367,11 @@
   const btnAI = $('btnAI');
 
   // URL ?author_id=... 또는 ?author=이름  → 작성자 고정
+  // URL ?basic_db=<data_source_id>  → 본인 기본과제 DB
   const urlParams = new URLSearchParams(location.search);
   const urlAuthorId = (urlParams.get('author_id') || '').trim();
   const urlAuthorName = (urlParams.get('author') || '').trim();
+  const urlBasicDb = (urlParams.get('basic_db') || '').trim();
 
   // 작성일자 = 오늘 (로컬)
   const offsetMs = new Date().getTimezoneOffset() * 60000;
@@ -458,55 +460,50 @@
       // 1) URL 파라미터로 고정
       if (urlAuthorId && executiveMap.has(urlAuthorId)) {
         lockAuthor(urlAuthorId, executiveMap.get(urlAuthorId));
-        await loadInitiatives(urlAuthorId);
-        return;
-      }
-      if (urlAuthorName) {
+      } else if (urlAuthorName) {
         const match = list.find((e) => e.name === urlAuthorName);
-        if (match) {
-          lockAuthor(match.id, match.name);
-          await loadInitiatives(match.id);
-          return;
+        if (match) lockAuthor(match.id, match.name);
+      }
+
+      // 2) 작성자 드롭다운 모드 (URL 고정 안 됐을 때)
+      if (!currentAuthorId) {
+        setOptions(authorSel, list, '임원을 선택하세요');
+        authorSel.disabled = false;
+        const last = localStorage.getItem(LS_AUTHOR_KEY);
+        if (last && executiveMap.has(last)) {
+          authorSel.value = last;
+          currentAuthorId = last;
         }
       }
 
-      // 2) 드롭다운 선택 모드
-      setOptions(authorSel, list, '임원을 선택하세요');
-      authorSel.disabled = false;
-      const last = localStorage.getItem(LS_AUTHOR_KEY);
-      if (last && executiveMap.has(last)) {
-        authorSel.value = last;
-        currentAuthorId = last;
-        await loadInitiatives(last);
-      }
+      // 3) 기본과제 로드 (URL의 basic_db로)
+      await loadBasicTasks();
     } catch (err) {
       setOptions(authorSel, [], '임원 로드 실패');
       showStatus('❌ 임원 목록 로드 실패: ' + err.message, 'error');
     }
   }
 
-  async function loadInitiatives(executiveId) {
-    if (!executiveId) {
-      initiativeMap = new Map();
-      renderInitiatives([], '먼저 작성자를 선택하세요');
+  async function loadBasicTasks() {
+    if (!urlBasicDb) {
+      renderInitiatives([], '⚠ URL에 ?basic_db=<DB_ID> 파라미터가 필요합니다');
       return;
     }
     renderInitiatives([], '불러오는 중...');
     try {
-      const res = await fetch(WORKER_URL + '/api/initiatives?executive_id=' + encodeURIComponent(executiveId));
+      const res = await fetch(WORKER_URL + '/api/basic-tasks?db=' + encodeURIComponent(urlBasicDb));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
-      const list = data.initiatives || [];
+      const list = data.tasks || [];
       initiativeMap = new Map(list.map((i) => [i.id, i.name]));
-      renderInitiatives(list, '본인 과제가 없습니다');
-      // 과제가 1개뿐이면 자동 선택
+      renderInitiatives(list, '기본과제가 없습니다');
       if (list.length === 1) {
         const only = initiativeList.querySelector('input[name="initiative"]');
         if (only) only.checked = true;
       }
     } catch (err) {
-      renderInitiatives([], '과제 로드 실패');
-      showStatus('❌ 전략과제 목록 로드 실패: ' + err.message, 'error');
+      renderInitiatives([], '기본과제 로드 실패');
+      showStatus('❌ 기본과제 목록 로드 실패: ' + err.message, 'error');
     }
   }
 
@@ -514,7 +511,6 @@
     const id = authorSel.value;
     currentAuthorId = id;
     if (id) localStorage.setItem(LS_AUTHOR_KEY, id);
-    loadInitiatives(id);
   });
 
   function resetAIButton() {
@@ -582,13 +578,13 @@
     e.preventDefault();
     hideStatus();
 
-    const initiativeId = selectedInitiativeId();
+    const taskId = selectedInitiativeId();
     if (!currentAuthorId) {
-      showStatus('❌ 작성자를 선택하세요.', 'error');
+      showStatus('❌ 보고자를 선택하세요.', 'error');
       return;
     }
-    if (!initiativeId) {
-      showStatus('❌ 전략과제를 선택하세요.', 'error');
+    if (!taskId) {
+      showStatus('❌ 기본과제를 선택하세요.', 'error');
       return;
     }
 
@@ -597,8 +593,8 @@
     btnSave.innerHTML = '⏳ 저장 중...';
 
     const payload = {
-      initiative_id: initiativeId,
-      initiative_name: initiativeMap.get(initiativeId) || '',
+      task_id: taskId,
+      task_name: initiativeMap.get(taskId) || '',
       author_id: currentAuthorId,
       author_name: executiveMap.get(currentAuthorId) || '',
       summary: $('summary').value.trim(),
@@ -607,7 +603,7 @@
     };
 
     try {
-      const res = await fetch(WORKER_URL + '/api/save', {
+      const res = await fetch(WORKER_URL + '/api/save-basic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

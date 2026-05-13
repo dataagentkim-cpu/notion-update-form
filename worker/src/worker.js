@@ -51,6 +51,16 @@ export default {
       if (url.pathname === '/api/save' && request.method === 'POST') {
         return jsonResponse(await handleSave(request, env), env);
       }
+      if (url.pathname === '/api/polish' && request.method === 'POST') {
+        return jsonResponse(await handlePolish(request, env), env);
+      }
+      if (url.pathname === '/api/basic-tasks' && request.method === 'GET') {
+        const dbId = url.searchParams.get('db');
+        return jsonResponse(await handleBasicTasks(dbId, env), env);
+      }
+      if (url.pathname === '/api/save-basic' && request.method === 'POST') {
+        return jsonResponse(await handleSaveBasic(request, env), env);
+      }
       if (url.pathname === '/api/health') {
         return jsonResponse({ ok: true, time: new Date().toISOString() }, env);
       }
@@ -233,5 +243,174 @@ async function handleSave(request, env) {
     page_id: created.id,
     url: created.url,
     warnings,
+  };
+}
+
+// 기본과제 업데이트 이력 DB 컬럼
+const BH_PROP_TITLE = '제목';
+const BH_PROP_REPORTER = '보고자';
+const BH_PROP_DATE = '작성일자';
+const BH_PROP_CONTENT = '상세내용';
+const BH_PROP_TASK = '기본과제'; // 사용자가 나중에 relation 속성으로 추가 예정
+
+async function handleBasicTasks(dataSourceId, env) {
+  if (!dataSourceId) return { error: 'db 파라미터가 필요합니다 (?db=<data_source_id>).' };
+
+  // 임원별 개인 DB의 title 속성명을 자동 감지
+  let titleProp = null;
+  try {
+    const ds = await notion(`/data_sources/${dataSourceId}`, {}, env);
+    for (const [k, v] of Object.entries(ds.properties || {})) {
+      if (v.type === 'title') { titleProp = k; break; }
+    }
+  } catch (e) {
+    return { error: `기본과제 DB 스키마 조회 실패: ${e.message}` };
+  }
+  if (!titleProp) return { error: '제목(title) 속성을 찾을 수 없습니다.' };
+
+  let pages;
+  try {
+    pages = await queryAll(dataSourceId, {
+      sorts: [{ property: titleProp, direction: 'ascending' }],
+    }, env);
+  } catch (e) {
+    return { error: `기본과제 조회 실패: ${e.message}` };
+  }
+
+  const tasks = pages
+    .map((p) => ({ id: p.id, name: readTitle(p, titleProp) }))
+    .filter((t) => t.name);
+  return { tasks };
+}
+
+async function handleSaveBasic(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const taskId = (body.task_id || '').trim();
+  const taskName = (body.task_name || '').trim();
+  const authorId = (body.author_id || '').trim();
+  const summary = (body.summary || '').trim();
+  const content = (body.content || '').trim();
+  const dateStr = (body.date || '').trim();
+
+  if (!taskId)   return { error: '기본과제를 선택하세요.' };
+  if (!authorId) return { error: '보고자(임원)를 선택하세요.' };
+  if (!summary)  return { error: '제목을 입력하세요.' };
+
+  // 기본 속성 구성 (relation 속성이 아직 없을 수 있어, 제목에 과제명 prefix도 같이 박음)
+  const properties = {
+    [BH_PROP_TITLE]: {
+      title: [{ text: { content: taskName ? `[${taskName}] ${summary}` : summary } }],
+    },
+    [BH_PROP_REPORTER]: { relation: [{ id: authorId }] },
+  };
+  if (content) properties[BH_PROP_CONTENT] = { rich_text: [{ text: { content } }] };
+  if (dateStr) properties[BH_PROP_DATE] = { date: { start: dateStr } };
+
+  // 기본과제 relation 속성이 추가됐다면 함께 세팅 (없으면 fallback)
+  const warnings = [];
+  try {
+    const created = await notion('/pages', {
+      method: 'POST',
+      body: JSON.stringify({
+        parent: { type: 'data_source_id', data_source_id: env.BASIC_HISTORY_DATA_SOURCE_ID },
+        properties: { ...properties, [BH_PROP_TASK]: { relation: [{ id: taskId }] } },
+      }),
+    }, env);
+    return { ok: true, page_id: created.id, url: created.url, warnings };
+  } catch (e) {
+    // '기본과제' relation 속성 미존재 → 제거하고 재시도
+    if (String(e.message).includes('기본과제') || String(e.message).includes('property') || String(e.message).includes('validation_error')) {
+      try {
+        const created = await notion('/pages', {
+          method: 'POST',
+          body: JSON.stringify({
+            parent: { type: 'data_source_id', data_source_id: env.BASIC_HISTORY_DATA_SOURCE_ID },
+            properties,
+          }),
+        }, env);
+        warnings.push(`'${BH_PROP_TASK}' relation 속성이 이력 DB에 없어 과제 직접 연결 없이 저장됨 (제목에 과제명 prefix로 표시)`);
+        return { ok: true, page_id: created.id, url: created.url, warnings };
+      } catch (e2) {
+        return { error: `저장 실패: ${e2.message}` };
+      }
+    }
+    return { error: `저장 실패: ${e.message}` };
+  }
+}
+
+async function handlePolish(request, env) {
+  if (!env.ANTHROPIC_API_KEY) {
+    return { error: 'AI 기능이 설정되지 않았습니다 (ANTHROPIC_API_KEY 시크릿 누락).' };
+  }
+
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const summary = (body.summary || '').trim();
+  const content = (body.content || '').trim();
+  if (!summary && !content) return { error: '다듬을 내용을 입력하세요.' };
+
+  // 입력 길이 캡 (어뷰즈 방지)
+  const sLim = summary.slice(0, 500);
+  const cLim = content.slice(0, 4000);
+
+  const systemPrompt = `당신은 한화그룹 임원의 전략과제 진행 업데이트 메모를 정리하는 비서입니다.
+임원이 작성한 거친 메모(요약 제목 + 상세 내용)를 받아 임원 보고체로 다듬어 JSON으로만 응답합니다.
+
+규칙:
+- 입력에 없는 수치/일정/조직명/금액을 새로 만들지 말 것. 사실 보존이 최우선.
+- 격식체 사용 (~함, ~예정, ~검토, ~조치).
+- summary: 30자 이내 핵심 한 줄. 핵심 명사구 + 동사 형태.
+- content: 자연스러운 단락 또는 짧은 불릿 (3~5줄). 마크다운 사용 가능.
+- 모호한 표현은 명확히, 중복은 제거.
+- 응답은 반드시 다음 JSON 한 줄만:
+  {"summary":"...","content":"..."}
+- 코드펜스(\`\`\`) 금지, 다른 설명 금지.`;
+
+  const userMsg = `[요약 제목 초안]\n${sLim || '(없음)'}\n\n[상세 내용 초안]\n${cLim || '(없음)'}`;
+
+  let apiRes;
+  try {
+    apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'user-agent': 'notion-update-form/1.0',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 600,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }],
+      }),
+    });
+  } catch (e) {
+    return { error: `Claude API 호출 실패: ${e.message}` };
+  }
+
+  const data = await apiRes.json();
+  if (!apiRes.ok) {
+    return { error: `Claude API 오류: ${data.error?.message || apiRes.status}` };
+  }
+
+  const text = data.content?.[0]?.text || '';
+  let parsed;
+  try {
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return { error: 'AI 응답 파싱 실패', raw: text.slice(0, 500) };
+  }
+
+  return {
+    ok: true,
+    summary: parsed.summary || summary,
+    content: parsed.content || content,
   };
 }
