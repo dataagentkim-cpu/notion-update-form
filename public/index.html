@@ -137,6 +137,76 @@
     padding-right: 36px;
   }
   .select:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* Author chip (locked) */
+  .author-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border-radius: 9px;
+    font-size: 15px; font-weight: 600;
+    border: 1.5px solid transparent;
+  }
+  .author-chip .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Radio card list */
+  .radio-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .radio-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    background: var(--input-bg);
+    border: 1.5px solid var(--input-border);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .radio-card:hover { border-color: var(--text-secondary); }
+  .radio-card input[type="radio"] {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border: 2px solid var(--input-border);
+    border-radius: 50%;
+    margin: 0; flex-shrink: 0;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .radio-card input[type="radio"]:checked {
+    border-color: var(--accent);
+  }
+  .radio-card input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .radio-card:has(input[type="radio"]:checked) {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+  .radio-card-text {
+    flex: 1; min-width: 0;
+    font-size: 15px; font-weight: 500;
+    color: var(--text-primary);
+  }
+  .radio-empty {
+    padding: 14px;
+    border: 1.5px dashed var(--input-border);
+    border-radius: 9px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
   .textarea {
     resize: vertical;
     min-height: 130px;
@@ -233,11 +303,14 @@
 
   <form id="updateForm">
     <div class="field-row">
-      <div class="field">
+      <div class="field" id="authorField">
         <label class="field-label" for="author">작성자(임원) <span class="req">*</span></label>
         <select id="author" class="select" required disabled>
           <option value="">불러오는 중...</option>
         </select>
+        <div id="authorLocked" class="author-chip" style="display:none">
+          <span class="dot"></span><span id="authorLockedName">—</span>
+        </div>
       </div>
       <div class="field">
         <label class="field-label" for="date">작성일자</label>
@@ -246,10 +319,10 @@
     </div>
 
     <div class="field">
-      <label class="field-label" for="initiative">전략과제명 <span class="req">*</span></label>
-      <select id="initiative" class="select" required disabled>
-        <option value="">먼저 작성자를 선택하세요</option>
-      </select>
+      <label class="field-label">전략과제명 <span class="req">*</span></label>
+      <div id="initiativeList" class="radio-list">
+        <div class="radio-empty">먼저 작성자를 선택하세요</div>
+      </div>
     </div>
 
     <div class="field">
@@ -285,18 +358,26 @@
   const form = $('updateForm');
   const dateInput = $('date');
   const authorSel = $('author');
-  const initiativeSel = $('initiative');
+  const authorLocked = $('authorLocked');
+  const authorLockedName = $('authorLockedName');
+  const initiativeList = $('initiativeList');
   const status = $('status');
   const btnSave = $('btnSave');
   const btnReset = $('btnReset');
+
+  // URL ?author_id=... 또는 ?author=이름  → 작성자 고정
+  const urlParams = new URLSearchParams(location.search);
+  const urlAuthorId = (urlParams.get('author_id') || '').trim();
+  const urlAuthorName = (urlParams.get('author') || '').trim();
 
   // 작성일자 = 오늘 (로컬)
   const offsetMs = new Date().getTimezoneOffset() * 60000;
   const todayStr = () => new Date(Date.now() - offsetMs).toISOString().slice(0, 10);
   dateInput.value = todayStr();
 
-  let executiveMap = new Map(); // id -> name
-  let initiativeMap = new Map(); // id -> name
+  let executiveMap = new Map();   // id -> name
+  let initiativeMap = new Map();  // id -> name
+  let currentAuthorId = '';
 
   function showStatus(message, type) {
     status.textContent = message;
@@ -326,6 +407,45 @@
     select.appendChild(frag);
   }
 
+  function renderInitiatives(list, placeholderText) {
+    initiativeList.innerHTML = '';
+    if (!list || list.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'radio-empty';
+      empty.textContent = placeholderText || '본인 과제가 없습니다';
+      initiativeList.appendChild(empty);
+      return;
+    }
+    for (const it of list) {
+      const label = document.createElement('label');
+      label.className = 'radio-card';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'initiative';
+      input.value = it.id;
+      input.required = true;
+      const span = document.createElement('span');
+      span.className = 'radio-card-text';
+      span.textContent = it.name;
+      label.appendChild(input);
+      label.appendChild(span);
+      initiativeList.appendChild(label);
+    }
+  }
+
+  function selectedInitiativeId() {
+    const checked = initiativeList.querySelector('input[name="initiative"]:checked');
+    return checked ? checked.value : '';
+  }
+
+  function lockAuthor(id, name) {
+    currentAuthorId = id;
+    authorSel.style.display = 'none';
+    authorSel.required = false;
+    authorLocked.style.display = 'inline-flex';
+    authorLockedName.textContent = name;
+  }
+
   async function loadExecutives() {
     try {
       const res = await fetch(WORKER_URL + '/api/bootstrap');
@@ -333,13 +453,29 @@
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       const list = data.executives || [];
       executiveMap = new Map(list.map((e) => [e.id, e.name]));
+
+      // 1) URL 파라미터로 고정
+      if (urlAuthorId && executiveMap.has(urlAuthorId)) {
+        lockAuthor(urlAuthorId, executiveMap.get(urlAuthorId));
+        await loadInitiatives(urlAuthorId);
+        return;
+      }
+      if (urlAuthorName) {
+        const match = list.find((e) => e.name === urlAuthorName);
+        if (match) {
+          lockAuthor(match.id, match.name);
+          await loadInitiatives(match.id);
+          return;
+        }
+      }
+
+      // 2) 드롭다운 선택 모드
       setOptions(authorSel, list, '임원을 선택하세요');
       authorSel.disabled = false;
-
-      // 직전에 선택한 임원 복원
       const last = localStorage.getItem(LS_AUTHOR_KEY);
       if (last && executiveMap.has(last)) {
         authorSel.value = last;
+        currentAuthorId = last;
         await loadInitiatives(last);
       }
     } catch (err) {
@@ -351,34 +487,31 @@
   async function loadInitiatives(executiveId) {
     if (!executiveId) {
       initiativeMap = new Map();
-      setOptions(initiativeSel, [], '먼저 작성자를 선택하세요');
-      initiativeSel.disabled = true;
+      renderInitiatives([], '먼저 작성자를 선택하세요');
       return;
     }
-    initiativeSel.disabled = true;
-    setOptions(initiativeSel, [], '불러오는 중...');
+    renderInitiatives([], '불러오는 중...');
     try {
       const res = await fetch(WORKER_URL + '/api/initiatives?executive_id=' + encodeURIComponent(executiveId));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       const list = data.initiatives || [];
       initiativeMap = new Map(list.map((i) => [i.id, i.name]));
-      if (list.length === 0) {
-        setOptions(initiativeSel, [], '본인 과제가 없습니다');
-        initiativeSel.disabled = true;
-      } else {
-        setOptions(initiativeSel, list, '전략과제를 선택하세요');
-        initiativeSel.disabled = false;
+      renderInitiatives(list, '본인 과제가 없습니다');
+      // 과제가 1개뿐이면 자동 선택
+      if (list.length === 1) {
+        const only = initiativeList.querySelector('input[name="initiative"]');
+        if (only) only.checked = true;
       }
     } catch (err) {
-      setOptions(initiativeSel, [], '과제 로드 실패');
-      initiativeSel.disabled = true;
+      renderInitiatives([], '과제 로드 실패');
       showStatus('❌ 전략과제 목록 로드 실패: ' + err.message, 'error');
     }
   }
 
   authorSel.addEventListener('change', () => {
     const id = authorSel.value;
+    currentAuthorId = id;
     if (id) localStorage.setItem(LS_AUTHOR_KEY, id);
     loadInitiatives(id);
   });
@@ -387,21 +520,34 @@
     $('summary').value = '';
     $('content').value = '';
     dateInput.value = todayStr();
+    const checked = initiativeList.querySelector('input[name="initiative"]:checked');
+    if (checked) checked.checked = false;
     hideStatus();
   });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideStatus();
+
+    const initiativeId = selectedInitiativeId();
+    if (!currentAuthorId) {
+      showStatus('❌ 작성자를 선택하세요.', 'error');
+      return;
+    }
+    if (!initiativeId) {
+      showStatus('❌ 전략과제를 선택하세요.', 'error');
+      return;
+    }
+
     btnSave.disabled = true;
     const originalText = btnSave.innerHTML;
     btnSave.innerHTML = '⏳ 저장 중...';
 
     const payload = {
-      initiative_id: initiativeSel.value,
-      initiative_name: initiativeMap.get(initiativeSel.value) || '',
-      author_id: authorSel.value,
-      author_name: executiveMap.get(authorSel.value) || '',
+      initiative_id: initiativeId,
+      initiative_name: initiativeMap.get(initiativeId) || '',
+      author_id: currentAuthorId,
+      author_name: executiveMap.get(currentAuthorId) || '',
       summary: $('summary').value.trim(),
       content: $('content').value.trim(),
       date: dateInput.value,
