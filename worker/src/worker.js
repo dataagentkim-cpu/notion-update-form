@@ -54,6 +54,15 @@ export default {
       if (url.pathname === '/api/polish' && request.method === 'POST') {
         return jsonResponse(await handlePolish(request, env), env);
       }
+      if (url.pathname === '/api/llm-key' && request.method === 'GET') {
+        // 클라이언트가 Gemini를 직접 호출하기 위한 키 발급 (Origin 체크)
+        const origin = request.headers.get('Origin') || '';
+        if (env.ALLOWED_ORIGIN && env.ALLOWED_ORIGIN !== '*' && origin !== env.ALLOWED_ORIGIN) {
+          return jsonResponse({ error: 'Forbidden origin' }, env, 403);
+        }
+        if (!env.GEMINI_API_KEY) return jsonResponse({ error: 'GEMINI_API_KEY 미설정' }, env, 500);
+        return jsonResponse({ key: env.GEMINI_API_KEY, model: 'gemini-2.5-flash' }, env);
+      }
       if (url.pathname === '/api/basic-tasks' && request.method === 'GET') {
         const dbId = url.searchParams.get('db');
         const execId = url.searchParams.get('executive_id') || '';
@@ -397,8 +406,8 @@ async function handleSaveBasic(request, env) {
 }
 
 async function handlePolish(request, env) {
-  if (!env.ANTHROPIC_API_KEY) {
-    return { error: 'AI 기능이 설정되지 않았습니다 (ANTHROPIC_API_KEY 시크릿 누락).' };
+  if (!env.GEMINI_API_KEY) {
+    return { error: 'AI 기능이 설정되지 않았습니다 (GEMINI_API_KEY 시크릿 누락).' };
   }
 
   let body;
@@ -421,46 +430,57 @@ async function handlePolish(request, env) {
 - 격식체 사용 (~함, ~예정, ~검토, ~조치).
 - summary: 30자 이내 핵심 한 줄. 핵심 명사구 + 동사 형태.
 - content: 자연스러운 단락 또는 짧은 불릿 (3~5줄). 마크다운 사용 가능.
-- 모호한 표현은 명확히, 중복은 제거.
-- 응답은 반드시 다음 JSON 한 줄만:
-  {"summary":"...","content":"..."}
-- 코드펜스(\`\`\`) 금지, 다른 설명 금지.`;
+- 모호한 표현은 명확히, 중복은 제거.`;
 
   const userMsg = `[요약 제목 초안]\n${sLim || '(없음)'}\n\n[상세 내용 초안]\n${cLim || '(없음)'}`;
 
   let apiRes;
   try {
-    apiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'user-agent': 'notion-update-form/1.0',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 600,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMsg }],
-      }),
-    });
+    apiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'object',
+              properties: {
+                summary: { type: 'string' },
+                content: { type: 'string' },
+              },
+              required: ['summary', 'content'],
+            },
+            maxOutputTokens: 600,
+            temperature: 0.3,
+          },
+        }),
+      }
+    );
   } catch (e) {
-    return { error: `Claude API 호출 실패: ${e.message}` };
+    return { error: `Gemini API 호출 실패: ${e.message}` };
   }
 
   const data = await apiRes.json();
   if (!apiRes.ok) {
-    return { error: `Claude API 오류: ${data.error?.message || apiRes.status}` };
+    return { error: `Gemini API 오류: ${data.error?.message || apiRes.status}` };
   }
 
-  const text = data.content?.[0]?.text || '';
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   let parsed;
   try {
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(text);
   } catch {
-    return { error: 'AI 응답 파싱 실패', raw: text.slice(0, 500) };
+    // Gemini가 responseSchema 무시한 경우 코드펜스 제거 시도
+    try {
+      const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      return { error: 'AI 응답 파싱 실패', raw: text.slice(0, 500) };
+    }
   }
 
   return {
