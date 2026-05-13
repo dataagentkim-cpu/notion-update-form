@@ -491,12 +491,14 @@
     }
     renderInitiatives([], '불러오는 중...');
     try {
-      const res = await fetch(WORKER_URL + '/api/basic-tasks?db=' + encodeURIComponent(urlBasicDb));
+      let qs = 'db=' + encodeURIComponent(urlBasicDb);
+      if (currentAuthorId) qs += '&executive_id=' + encodeURIComponent(currentAuthorId);
+      const res = await fetch(WORKER_URL + '/api/basic-tasks?' + qs);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       const list = data.tasks || [];
       initiativeMap = new Map(list.map((i) => [i.id, i.name]));
-      renderInitiatives(list, '기본과제가 없습니다');
+      renderInitiatives(list, '본인 담당 기본과제가 없습니다');
       if (list.length === 1) {
         const only = initiativeList.querySelector('input[name="initiative"]');
         if (only) only.checked = true;
@@ -511,6 +513,7 @@
     const id = authorSel.value;
     currentAuthorId = id;
     if (id) localStorage.setItem(LS_AUTHOR_KEY, id);
+    loadBasicTasks(); // 작성자 바뀌면 본인 담당 과제로 재필터
   });
 
   function resetAIButton() {

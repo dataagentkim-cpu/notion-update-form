@@ -56,7 +56,8 @@ export default {
       }
       if (url.pathname === '/api/basic-tasks' && request.method === 'GET') {
         const dbId = url.searchParams.get('db');
-        return jsonResponse(await handleBasicTasks(dbId, env), env);
+        const execId = url.searchParams.get('executive_id') || '';
+        return jsonResponse(await handleBasicTasks(dbId, execId, env), env);
       }
       if (url.pathname === '/api/save-basic' && request.method === 'POST') {
         return jsonResponse(await handleSaveBasic(request, env), env);
@@ -253,26 +254,37 @@ const BH_PROP_DATE = '작성일자';
 const BH_PROP_CONTENT = '상세내용';
 const BH_PROP_TASK = '기본과제'; // 사용자가 나중에 relation 속성으로 추가 예정
 
-async function handleBasicTasks(dataSourceId, env) {
+// 기본과제 DB에서 임원과 연결된 relation 속성 후보 (있는 만큼 OR로 매칭)
+const BASIC_OWNER_PROP_CANDIDATES = ['담당 임원', '담당임원', '참여 임원', '참여임원'];
+
+async function handleBasicTasks(dataSourceId, executiveId, env) {
   if (!dataSourceId) return { error: 'db 파라미터가 필요합니다 (?db=<data_source_id>).' };
 
-  // 임원별 개인 DB의 title 속성명을 자동 감지
+  // 임원별 개인 DB의 title 속성명 + 보유한 owner relation 속성 자동 감지
   let titleProp = null;
+  const ownerProps = [];
   try {
     const ds = await notion(`/data_sources/${dataSourceId}`, {}, env);
     for (const [k, v] of Object.entries(ds.properties || {})) {
-      if (v.type === 'title') { titleProp = k; break; }
+      if (v.type === 'title') titleProp = titleProp || k;
+      if (v.type === 'relation' && BASIC_OWNER_PROP_CANDIDATES.includes(k)) ownerProps.push(k);
     }
   } catch (e) {
     return { error: `기본과제 DB 스키마 조회 실패: ${e.message}` };
   }
   if (!titleProp) return { error: '제목(title) 속성을 찾을 수 없습니다.' };
 
+  // executive_id 주어졌고 owner relation 속성이 있으면 필터링
+  const query = { sorts: [{ property: titleProp, direction: 'ascending' }] };
+  if (executiveId && ownerProps.length > 0) {
+    query.filter = ownerProps.length === 1
+      ? { property: ownerProps[0], relation: { contains: executiveId } }
+      : { or: ownerProps.map((p) => ({ property: p, relation: { contains: executiveId } })) };
+  }
+
   let pages;
   try {
-    pages = await queryAll(dataSourceId, {
-      sorts: [{ property: titleProp, direction: 'ascending' }],
-    }, env);
+    pages = await queryAll(dataSourceId, query, env);
   } catch (e) {
     return { error: `기본과제 조회 실패: ${e.message}` };
   }
@@ -280,7 +292,7 @@ async function handleBasicTasks(dataSourceId, env) {
   const tasks = pages
     .map((p) => ({ id: p.id, name: readTitle(p, titleProp) }))
     .filter((t) => t.name);
-  return { tasks };
+  return { tasks, filtered_by: ownerProps, executive_filter: executiveId ? 'applied' : 'none' };
 }
 
 async function handleSaveBasic(request, env) {
