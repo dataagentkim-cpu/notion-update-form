@@ -382,10 +382,10 @@ async function handleSaveBasic(request, env) {
   if (!authorId) return { error: '작성자(임원)를 선택하세요.' };
   if (!summary)  return { error: '제목을 입력하세요.' };
 
-  // 기본 속성 구성 (relation 속성이 아직 없을 수 있어, 제목에 과제명 prefix도 같이 박음)
+  // 제목은 업데이트 요약만. 기본과제 연결은 별도 relation으로 처리.
   const properties = {
     [BH_PROP_TITLE]: {
-      title: [{ text: { content: taskName ? `[${taskName}] ${summary}` : summary } }],
+      title: [{ text: { content: summary } }],
     },
     [BH_PROP_REPORTER]: { relation: [{ id: authorId }] },
   };
