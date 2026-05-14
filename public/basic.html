@@ -446,8 +446,9 @@
               properties: { summary: { type: 'string' }, content: { type: 'string' } },
               required: ['summary', 'content'],
             },
-            maxOutputTokens: 600,
+            maxOutputTokens: 1024,
             temperature: 0.3,
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       }
