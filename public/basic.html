@@ -384,14 +384,14 @@
     <div class="field">
       <label class="field-label" for="summary">제목 <span class="req">*</span></label>
       <input id="summary" class="input" type="text" required
-             placeholder="예) 데이터 생태계 확장 전략 수립"
+             placeholder="예) 데이터 거버넌스 체계 수립 1차 점검 결과"
              autocomplete="off"/>
     </div>
 
     <div class="field">
       <label class="field-label" for="content">업데이트 내용</label>
       <textarea id="content" class="textarea"
-                placeholder="예) 저번주에 1차 테스트 돌렸고 정확도 82% 나옴. 데이터팀이랑 추가 피쳐 논의했고 다음달 파일럿 들어갈 예정. 예산 추가 필요할 수도 있음."></textarea>
+                placeholder="예) 계열사간 데이터 협의체 운영 방안 1차 합의. 표준 분류체계 적용 범위 확대를 위해 법무·컴플라이언스 협의 추진 중. 2분기 내 거버넌스 체계 확정 예정."></textarea>
     </div>
 
     <div class="actions">
@@ -419,15 +419,19 @@
     _llmKeyCache = d;
     return d;
   }
-  const POLISH_SYSTEM_PROMPT = `당신은 한화그룹 임원의 기본과제 진행 업데이트 메모를 정리하는 비서입니다.
-임원이 작성한 거친 메모(제목 + 상세 내용)를 받아 임원 보고체로 다듬어 JSON으로만 응답합니다.
+  const POLISH_SYSTEM_PROMPT = `당신은 한화금융그룹 임원이 사장에게 올리는 기본과제 진행 보고를 다듬는 비서입니다.
+임원이 작성한 거친 메모(제목 + 상세 내용)를 받아 사장 보고용 격식체로 정제하여 JSON으로만 응답합니다.
 
-규칙:
-- 입력에 없는 수치/일정/조직명/금액을 새로 만들지 말 것. 사실 보존이 최우선.
-- 격식체 사용 (~함, ~예정, ~검토, ~조치).
-- summary: 30자 이내 핵심 한 줄. 핵심 명사구 + 동사 형태.
-- content: 자연스러운 단락 또는 짧은 불릿 (3~5줄). 마크다운 사용 가능.
-- 모호한 표현은 명확히, 중복은 제거.`;
+원칙:
+- 사실 보존 최우선: 입력에 없는 수치·일정·조직명·금액·고유명사를 새로 만들거나 추정하지 말 것.
+- 보고체 사용: 명사형 종결(~함, ~예정, ~검토, ~추진, ~조치 등) 중심의 간결하고 객관적인 어조.
+- 사장 보고에 적합한 한자어·전문 용어 활용 (예: 추진 경과, 협의 진행, 우선 검토, 차주 중 추진).
+- 구어체·축약어·이모지·감탄사 금지 (예: "저번주" → "지난주", "팀이랑" → "과", "82% 나옴" → "82% 달성").
+- 모호·중복 표현은 명확하고 간결하게 재작성.
+
+출력 형식:
+- summary: 핵심 보고 요지 30자 이내 한 줄 (명사구 위주, 동사 종결 가능).
+- content: 임원 보고용 단락 3~5줄. 가능하면 진행 경과 → 향후 계획 → 이슈/요청 순으로 구성. 불릿 사용 시 "- " prefix.`;
   async function polishViaGemini(summary, content) {
     const { key, model } = await getLlmKey();
     const userMsg = `[제목 초안]\n${summary || '(없음)'}\n\n[상세 내용 초안]\n${content || '(없음)'}`;
