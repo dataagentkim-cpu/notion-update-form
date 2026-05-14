@@ -26,7 +26,7 @@ const SU_PROP_DATE = '작성일자';
 const SU_PROP_AUTHOR = '작성자';
 const SU_PROP_INITIATIVE = '전략과제 명 1';
 const SU_PROP_DAEBUNRYU = '전략과제_대분류'; // 대시보드 그룹핑용 (전략과제에서 복사)
-const SU_PROP_PRIORITY = '중요도'; // 상/중/하
+const SU_PROP_PRIORITY = '중요도'; // 대시보드 게시 / 과제이력 관리
 const SU_PROP_FILES = '파일과 미디어';
 const EX_PROP_NAME = '성명';
 const INIT_PROP_NAME = '전략과제명';
@@ -215,7 +215,7 @@ async function handleSave(request, env) {
   const summary = (body.summary || '').trim();
   const content = (body.content || '').trim();
   const dateStr = (body.date || '').trim();
-  const priority = (body.priority || '중').trim(); // 상/중/하 (디폴트 중)
+  const priority = (body.priority || '과제이력 관리').trim(); // 대시보드 게시 / 과제이력 관리 (디폴트 후자)
   const fileUploads = Array.isArray(body.file_uploads) ? body.file_uploads : []; // [{id,name}]
 
   if (!initiativeId) return { error: '전략과제를 선택하세요.' };
@@ -253,7 +253,7 @@ async function handleSave(request, env) {
   if (daebunRelation.length > 0) {
     properties[SU_PROP_DAEBUNRYU] = { relation: daebunRelation };
   }
-  if (['상','중','하'].includes(priority)) {
+  if (['대시보드 게시','과제이력 관리'].includes(priority)) {
     properties[SU_PROP_PRIORITY] = { select: { name: priority } };
   }
   if (fileUploads.length > 0) {

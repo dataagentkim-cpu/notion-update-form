@@ -399,9 +399,8 @@
       <div class="field">
         <label class="field-label" for="priority">중요도</label>
         <select id="priority" class="select">
-          <option value="상">상</option>
-          <option value="중" selected>중</option>
-          <option value="하">하</option>
+          <option value="대시보드 게시">대시보드 게시</option>
+          <option value="과제이력 관리" selected>과제이력 관리</option>
         </select>
       </div>
       <div class="field">
@@ -655,7 +654,7 @@
     $('summary').value = '';
     $('content').value = '';
     dateInput.value = todayStr();
-    $('priority').value = '중';
+    $('priority').value = '과제이력 관리';
     $('files').value = '';
     $('filesStatus').textContent = '';
     const checked = initiativeList.querySelector('input[name="initiative"]:checked');
@@ -760,7 +759,7 @@
       summary: $('summary').value.trim(),
       content: $('content').value.trim(),
       date: dateInput.value,
-      priority: $('priority').value || '중',
+      priority: $('priority').value || '과제이력 관리',
       file_uploads: fileUploads,
     };
 
@@ -779,7 +778,7 @@
 
       $('summary').value = '';
       $('content').value = '';
-      $('priority').value = '중';
+      $('priority').value = '과제이력 관리';
       $('files').value = '';
       filesStatus.textContent = '';
       resetAIButton();
