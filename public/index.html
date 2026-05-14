@@ -395,9 +395,25 @@
                 placeholder="예) 금감원 협의 일정 1차 완료. 현지 파트너 후보 3개사 실사 진행 중이며, 5월 말 우선협상 대상자 선정 예정. 자본금 확충 방안은 차주 중 추가 검토 필요."></textarea>
     </div>
 
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="priority">중요도</label>
+        <select id="priority" class="select">
+          <option value="상">상</option>
+          <option value="중" selected>중</option>
+          <option value="하">하</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="files">파일과 미디어</label>
+        <input id="files" type="file" class="input" multiple style="padding:9px 12px"/>
+        <div id="filesStatus" style="font-size:12px;color:var(--text-secondary);margin-top:6px"></div>
+      </div>
+    </div>
+
     <div class="actions">
       <button type="button" id="btnAI" class="btn">✨ AI로 다듬기</button>
-      <button type="submit" id="btnSave" class="btn btn-primary">💾 Notion에 저장</button>
+      <button type="submit" id="btnSave" class="btn btn-primary">📤 업데이트 사항 제출</button>
       <button type="button" id="btnReset" class="btn">초기화</button>
     </div>
 
@@ -639,10 +655,18 @@
     $('summary').value = '';
     $('content').value = '';
     dateInput.value = todayStr();
+    $('priority').value = '중';
+    $('files').value = '';
+    $('filesStatus').textContent = '';
     const checked = initiativeList.querySelector('input[name="initiative"]:checked');
     if (checked) checked.checked = false;
     resetAIButton();
     hideStatus();
+  });
+
+  $('files').addEventListener('change', () => {
+    const fs = $('files').files;
+    $('filesStatus').textContent = fs && fs.length ? `${fs.length}개 선택됨` : '';
   });
 
   let originalDraft = null; // 다듬기 직전 원문 보관 (되돌리기용)
@@ -700,7 +724,33 @@
 
     btnSave.disabled = true;
     const originalText = btnSave.innerHTML;
-    btnSave.innerHTML = '⏳ 저장 중...';
+    btnSave.innerHTML = '⏳ 제출 중...';
+    const filesStatus = $('filesStatus');
+
+    // 1) 파일 업로드 먼저
+    const fileEls = $('files').files;
+    const fileUploads = [];
+    if (fileEls && fileEls.length > 0) {
+      for (let i = 0; i < fileEls.length; i++) {
+        const f = fileEls[i];
+        filesStatus.textContent = `⏳ 업로드 중 ${i+1}/${fileEls.length}: ${f.name}`;
+        const fd = new FormData();
+        fd.append('file', f, f.name);
+        try {
+          const r = await fetch(WORKER_URL + '/api/upload', { method: 'POST', body: fd });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || ('업로드 오류 ' + r.status));
+          fileUploads.push({ id: d.id, name: d.name });
+        } catch (err) {
+          showStatus('❌ 파일 업로드 실패 (' + f.name + '): ' + err.message, 'error');
+          btnSave.disabled = false;
+          btnSave.innerHTML = originalText;
+          filesStatus.textContent = '';
+          return;
+        }
+      }
+      filesStatus.textContent = `✅ ${fileEls.length}개 업로드 완료`;
+    }
 
     const payload = {
       initiative_id: initiativeId,
@@ -710,6 +760,8 @@
       summary: $('summary').value.trim(),
       content: $('content').value.trim(),
       date: dateInput.value,
+      priority: $('priority').value || '중',
+      file_uploads: fileUploads,
     };
 
     try {
@@ -722,15 +774,17 @@
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
 
       const warnings = (data.warnings || []).join(' / ');
-      const msg = '✅ Notion에 저장되었습니다.' + (warnings ? ' (' + warnings + ')' : '');
+      const msg = '✅ 업데이트가 제출되었습니다.' + (warnings ? ' (' + warnings + ')' : '');
       showStatus(msg, 'success');
 
-      // Soft-reset: keep 작성자/전략과제 for repeated entries
       $('summary').value = '';
       $('content').value = '';
+      $('priority').value = '중';
+      $('files').value = '';
+      filesStatus.textContent = '';
       resetAIButton();
     } catch (err) {
-      showStatus('❌ 저장 실패: ' + err.message, 'error');
+      showStatus('❌ 제출 실패: ' + err.message, 'error');
     } finally {
       btnSave.disabled = false;
       btnSave.innerHTML = originalText;

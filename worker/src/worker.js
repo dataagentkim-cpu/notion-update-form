@@ -26,6 +26,8 @@ const SU_PROP_DATE = '작성일자';
 const SU_PROP_AUTHOR = '작성자';
 const SU_PROP_INITIATIVE = '전략과제 명 1';
 const SU_PROP_DAEBUNRYU = '전략과제_대분류'; // 대시보드 그룹핑용 (전략과제에서 복사)
+const SU_PROP_PRIORITY = '중요도'; // 상/중/하
+const SU_PROP_FILES = '파일과 미디어';
 const EX_PROP_NAME = '성명';
 const INIT_PROP_NAME = '전략과제명';
 const INIT_PROP_DAEBUNRYU = '전략과제_대분류';
@@ -50,6 +52,9 @@ export default {
       }
       if (url.pathname === '/api/save' && request.method === 'POST') {
         return jsonResponse(await handleSave(request, env), env);
+      }
+      if (url.pathname === '/api/upload' && request.method === 'POST') {
+        return jsonResponse(await handleUpload(request, env), env);
       }
       if (url.pathname === '/api/polish' && request.method === 'POST') {
         return jsonResponse(await handlePolish(request, env), env);
@@ -210,6 +215,8 @@ async function handleSave(request, env) {
   const summary = (body.summary || '').trim();
   const content = (body.content || '').trim();
   const dateStr = (body.date || '').trim();
+  const priority = (body.priority || '중').trim(); // 상/중/하 (디폴트 중)
+  const fileUploads = Array.isArray(body.file_uploads) ? body.file_uploads : []; // [{id,name}]
 
   if (!initiativeId) return { error: '전략과제를 선택하세요.' };
   if (!authorId)    return { error: '작성자(임원)를 선택하세요.' };
@@ -245,6 +252,18 @@ async function handleSave(request, env) {
   };
   if (daebunRelation.length > 0) {
     properties[SU_PROP_DAEBUNRYU] = { relation: daebunRelation };
+  }
+  if (['상','중','하'].includes(priority)) {
+    properties[SU_PROP_PRIORITY] = { select: { name: priority } };
+  }
+  if (fileUploads.length > 0) {
+    properties[SU_PROP_FILES] = {
+      files: fileUploads.map((f) => ({
+        type: 'file_upload',
+        file_upload: { id: f.id },
+        name: f.name || 'upload',
+      })),
+    };
   }
   if (content) {
     properties[SU_PROP_CONTENT] = { rich_text: [{ text: { content } }] };
@@ -402,6 +421,47 @@ async function handleSaveBasic(request, env) {
       }
     }
     return { error: `저장 실패: ${e.message}` };
+  }
+}
+
+async function handleUpload(request, env) {
+  // 클라이언트가 보낸 multipart/form-data 파일을 노션 file_upload API로 forward
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file');
+    if (!file || typeof file === 'string') return { error: 'file 필드 누락' };
+    const fileName = file.name || 'upload';
+
+    // 1) file_upload 객체 생성
+    const createRes = await fetch(`${NOTION_API}/file_uploads`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.NOTION_TOKEN}`,
+        'Notion-Version': NOTION_VERSION,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ filename: fileName }),
+    });
+    const created = await createRes.json();
+    if (!createRes.ok) return { error: `file_upload 생성 실패: ${created.message || createRes.status}` };
+
+    // 2) send 엔드포인트로 파일 데이터 업로드
+    const sendForm = new FormData();
+    sendForm.append('file', file, fileName);
+    const sendRes = await fetch(`${NOTION_API}/file_uploads/${created.id}/send`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.NOTION_TOKEN}`,
+        'Notion-Version': NOTION_VERSION,
+      },
+      body: sendForm,
+    });
+    const sent = await sendRes.json();
+    if (!sendRes.ok) return { error: `file_upload 전송 실패: ${sent.message || sendRes.status}` };
+
+    return { ok: true, id: created.id, name: fileName };
+  } catch (e) {
+    return { error: `업로드 처리 실패: ${e.message}` };
   }
 }
 
