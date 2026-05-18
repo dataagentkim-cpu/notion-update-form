@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
-<title>기본과제 업데이트 입력</title>
+<title>고유과제 업데이트 입력</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -352,8 +352,8 @@
       </svg>
     </div>
     <div class="header-text">
-      <h1 class="header-title">기본과제 업데이트 입력</h1>
-      <p class="header-sub">본인 페이지의 기본과제 진행 상황을 기록하세요.</p>
+      <h1 class="header-title">고유과제 업데이트 입력</h1>
+      <p class="header-sub">본인 페이지의 고유과제 진행 상황을 기록하세요.</p>
     </div>
   </header>
 
@@ -375,9 +375,9 @@
     </div>
 
     <div class="field">
-      <label class="field-label">기본과제 <span class="req">*</span></label>
+      <label class="field-label">고유과제 <span class="req">*</span></label>
       <div id="initiativeList" class="radio-list">
-        <div class="radio-empty">기본과제 DB 로딩 중...</div>
+        <div class="radio-empty">고유과제 DB 로딩 중...</div>
       </div>
     </div>
 
@@ -419,7 +419,7 @@
     _llmKeyCache = d;
     return d;
   }
-  const POLISH_SYSTEM_PROMPT = `당신은 한화금융그룹 임원이 사장에게 올리는 기본과제 진행 보고를 다듬는 비서입니다.
+  const POLISH_SYSTEM_PROMPT = `당신은 한화금융그룹 임원이 사장에게 올리는 고유과제 진행 보고를 다듬는 비서입니다.
 임원이 작성한 거친 메모(제목 + 상세 내용)를 받아 사장 보고용 격식체로 정제하여 JSON으로만 응답합니다.
 
 원칙:
@@ -478,7 +478,7 @@
   const btnAI = $('btnAI');
 
   // URL ?author_id=... 또는 ?author=이름  → 작성자 고정
-  // URL ?basic_db=<data_source_id>  → 본인 기본과제 DB
+  // URL ?basic_db=<data_source_id>  → 본인 고유과제 DB
   const urlParams = new URLSearchParams(location.search);
   const urlAuthorId = (urlParams.get('author_id') || '').trim();
   const urlAuthorName = (urlParams.get('author') || '').trim();
@@ -587,7 +587,7 @@
         }
       }
 
-      // 3) 기본과제 로드 (URL의 basic_db로)
+      // 3) 고유과제 로드 (URL의 basic_db로)
       await loadBasicTasks();
     } catch (err) {
       setOptions(authorSel, [], '임원 로드 실패');
@@ -609,14 +609,14 @@
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       const list = data.tasks || [];
       initiativeMap = new Map(list.map((i) => [i.id, i.name]));
-      renderInitiatives(list, '본인 담당 기본과제가 없습니다');
+      renderInitiatives(list, '본인 담당 고유과제가 없습니다');
       if (list.length === 1) {
         const only = initiativeList.querySelector('input[name="initiative"]');
         if (only) only.checked = true;
       }
     } catch (err) {
-      renderInitiatives([], '기본과제 로드 실패');
-      showStatus('❌ 기본과제 목록 로드 실패: ' + err.message, 'error');
+      renderInitiatives([], '고유과제 로드 실패');
+      showStatus('❌ 고유과제 목록 로드 실패: ' + err.message, 'error');
     }
   }
 
@@ -692,7 +692,7 @@
       return;
     }
     if (!taskId) {
-      showStatus('❌ 기본과제를 선택하세요.', 'error');
+      showStatus('❌ 고유과제를 선택하세요.', 'error');
       return;
     }
 
