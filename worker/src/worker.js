@@ -301,6 +301,7 @@ async function handleSave(request, env) {
 const BT_PROP_NAME = '고유과제 명';
 const BT_PROP_OWNER = '담당 임원';
 const BT_PROP_STATUS = '진행 상태';
+const BT_PROP_DESC = '세부내용';
 
 async function handleBasicTaskCreate(request, env) {
   let body;
@@ -310,7 +311,7 @@ async function handleBasicTaskCreate(request, env) {
   const db = (body.db || '').trim();
   const name = (body.name || '').trim();
   const ownerId = (body.owner_id || '').trim();
-  const status = (body.status || '진행 중').trim();
+  const description = (body.description || '').trim();
 
   if (!db) return { error: 'db 파라미터 누락' };
   if (!name) return { error: '과제명을 입력하세요.' };
@@ -333,8 +334,10 @@ async function handleBasicTaskCreate(request, env) {
   const properties = {
     [titleProp]: { title: [{ text: { content: name } }] },
     [BT_PROP_OWNER]: { relation: [{ id: ownerId }] },
-    [BT_PROP_STATUS]: { select: { name: status } },
   };
+  if (description) {
+    properties[BT_PROP_DESC] = { rich_text: [{ text: { content: description } }] };
+  }
 
   try {
     const created = await notion('/pages', {

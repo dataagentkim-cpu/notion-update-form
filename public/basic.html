@@ -451,12 +451,9 @@
              placeholder="예) 데이터 거버넌스 체계 수립" autocomplete="off"/>
     </div>
     <div class="field">
-      <label class="field-label" for="newTaskStatus">진행 상태</label>
-      <select id="newTaskStatus" class="select">
-        <option value="진행 중" selected>진행 중</option>
-        <option value="완료">완료</option>
-        <option value="보류">보류</option>
-      </select>
+      <label class="field-label" for="newTaskDesc">세부내용</label>
+      <textarea id="newTaskDesc" class="textarea"
+                placeholder="예) 계열사간 데이터 협의체 운영 방안 합의, 표준 분류체계 적용 범위 확대 추진 등 과제 주요 내용 기술"></textarea>
     </div>
     <div class="actions">
       <button type="submit" id="btnCreate" class="btn btn-primary">➕ 신규 과제 생성</button>
@@ -827,7 +824,7 @@
     if (!currentAuthorId) { showStatus('❌ 작성자를 선택하세요.', 'error'); return; }
     if (!urlBasicDb) { showStatus('❌ basic_db 파라미터 누락.', 'error'); return; }
     const name = document.getElementById('newTaskName').value.trim();
-    const status = document.getElementById('newTaskStatus').value;
+    const description = document.getElementById('newTaskDesc').value.trim();
     if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
 
     const btn = document.getElementById('btnCreate');
@@ -836,13 +833,13 @@
       const res = await fetch(WORKER_URL + '/api/basic-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ db: urlBasicDb, name, owner_id: currentAuthorId, status }),
+        body: JSON.stringify({ db: urlBasicDb, name, owner_id: currentAuthorId, description }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       showStatus('✅ 신규 과제가 생성되었습니다: ' + name, 'success');
       document.getElementById('newTaskName').value = '';
-      document.getElementById('newTaskStatus').value = '진행 중';
+      document.getElementById('newTaskDesc').value = '';
       // 진척사항 모드의 라디오 리스트 새로고침
       await loadBasicTasks();
     } catch (err) {
@@ -853,7 +850,7 @@
   });
   document.getElementById('btnCreateReset').addEventListener('click', () => {
     document.getElementById('newTaskName').value = '';
-    document.getElementById('newTaskStatus').value = '진행 중';
+    document.getElementById('newTaskDesc').value = '';
     hideStatus();
   });
 
