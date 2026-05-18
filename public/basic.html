@@ -251,6 +251,40 @@
     color: var(--text-secondary);
     font-size: 14px;
   }
+
+  /* Mode tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 11px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+  .tab {
+    flex: 1;
+    min-width: max-content;
+    padding: 9px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text-primary); }
+  .tab.active {
+    background: var(--card-bg);
+    color: var(--accent);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .mode-panel { display: none; }
+  .mode-panel.active { display: block; }
   .textarea {
     resize: vertical;
     min-height: 130px;
@@ -357,23 +391,31 @@
     </div>
   </header>
 
-  <form id="updateForm">
-    <div class="field-row">
-      <div class="field" id="authorField">
-        <label class="field-label" for="author">작성자(임원) <span class="req">*</span></label>
-        <select id="author" class="select" required disabled>
-          <option value="">불러오는 중...</option>
-        </select>
-        <div id="authorLocked" class="author-chip" style="display:none">
-          <span class="dot"></span><span id="authorLockedName">—</span>
-        </div>
-      </div>
-      <div class="field">
-        <label class="field-label" for="date">작성일자</label>
-        <input id="date" class="input" type="date"/>
+  <!-- 모드 탭 (URL ?mode=full 일 때만 표시) -->
+  <div class="tabs" id="modeTabs" style="display:none">
+    <button type="button" class="tab active" data-mode="progress">진척사항 입력</button>
+    <button type="button" class="tab" data-mode="create">+ 신규 과제</button>
+  </div>
+
+  <!-- 공통: 작성자/날짜 -->
+  <div class="field-row">
+    <div class="field" id="authorField">
+      <label class="field-label" for="author">작성자(임원) <span class="req">*</span></label>
+      <select id="author" class="select" required disabled>
+        <option value="">불러오는 중...</option>
+      </select>
+      <div id="authorLocked" class="author-chip" style="display:none">
+        <span class="dot"></span><span id="authorLockedName">—</span>
       </div>
     </div>
+    <div class="field" id="dateField">
+      <label class="field-label" for="date">작성일자</label>
+      <input id="date" class="input" type="date"/>
+    </div>
+  </div>
 
+  <!-- 진척사항 입력 모드 -->
+  <form id="updateForm" class="mode-panel active" data-panel="progress">
     <div class="field">
       <label class="field-label">고유과제 <span class="req">*</span></label>
       <div id="initiativeList" class="radio-list">
@@ -396,12 +438,33 @@
 
     <div class="actions">
       <button type="button" id="btnAI" class="btn">✨ AI로 다듬기</button>
-      <button type="submit" id="btnSave" class="btn btn-primary">💾 Notion에 저장</button>
+      <button type="submit" id="btnSave" class="btn btn-primary">📤 업데이트 사항 제출</button>
       <button type="button" id="btnReset" class="btn">초기화</button>
     </div>
-
-    <div id="status" class="status" role="status" aria-live="polite"></div>
   </form>
+
+  <!-- 신규 과제 모드 -->
+  <form id="createForm" class="mode-panel" data-panel="create">
+    <div class="field">
+      <label class="field-label" for="newTaskName">고유과제 명 <span class="req">*</span></label>
+      <input id="newTaskName" class="input" type="text"
+             placeholder="예) 데이터 거버넌스 체계 수립" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label class="field-label" for="newTaskStatus">진행 상태</label>
+      <select id="newTaskStatus" class="select">
+        <option value="진행 중" selected>진행 중</option>
+        <option value="완료">완료</option>
+        <option value="보류">보류</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button type="submit" id="btnCreate" class="btn btn-primary">➕ 신규 과제 생성</button>
+      <button type="button" id="btnCreateReset" class="btn">초기화</button>
+    </div>
+  </form>
+
+  <div id="status" class="status" role="status" aria-live="polite"></div>
   </div>
 </div>
 
@@ -479,10 +542,32 @@
 
   // URL ?author_id=... 또는 ?author=이름  → 작성자 고정
   // URL ?basic_db=<data_source_id>  → 본인 고유과제 DB
+  // URL ?mode=full → 모드 탭 표시 (신규/수정/삭제 기능 활성)
   const urlParams = new URLSearchParams(location.search);
   const urlAuthorId = (urlParams.get('author_id') || '').trim();
   const urlAuthorName = (urlParams.get('author') || '').trim();
   const urlBasicDb = (urlParams.get('basic_db') || '').trim();
+  const urlMode = (urlParams.get('mode') || '').trim();
+
+  if (urlMode === 'full') {
+    document.getElementById('modeTabs').style.display = '';
+  }
+
+  // 모드 탭 동작
+  function setMode(mode) {
+    document.querySelectorAll('.tab').forEach((t) => {
+      t.classList.toggle('active', t.dataset.mode === mode);
+    });
+    document.querySelectorAll('.mode-panel').forEach((p) => {
+      p.classList.toggle('active', p.dataset.panel === mode);
+    });
+    // 진척사항 모드만 작성일자 의미 있음
+    const dateField = document.getElementById('dateField');
+    if (dateField) dateField.style.display = (mode === 'progress') ? '' : 'none';
+  }
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => setMode(t.dataset.mode));
+  });
 
   // 작성일자 = 오늘 (로컬)
   const offsetMs = new Date().getTimezoneOffset() * 60000;
@@ -733,6 +818,43 @@
       btnSave.disabled = false;
       btnSave.innerHTML = originalText;
     }
+  });
+
+  // 신규 과제 생성
+  document.getElementById('createForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+    if (!currentAuthorId) { showStatus('❌ 작성자를 선택하세요.', 'error'); return; }
+    if (!urlBasicDb) { showStatus('❌ basic_db 파라미터 누락.', 'error'); return; }
+    const name = document.getElementById('newTaskName').value.trim();
+    const status = document.getElementById('newTaskStatus').value;
+    if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
+
+    const btn = document.getElementById('btnCreate');
+    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 생성 중...';
+    try {
+      const res = await fetch(WORKER_URL + '/api/basic-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ db: urlBasicDb, name, owner_id: currentAuthorId, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      showStatus('✅ 신규 과제가 생성되었습니다: ' + name, 'success');
+      document.getElementById('newTaskName').value = '';
+      document.getElementById('newTaskStatus').value = '진행 중';
+      // 진척사항 모드의 라디오 리스트 새로고침
+      await loadBasicTasks();
+    } catch (err) {
+      showStatus('❌ 생성 실패: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.innerHTML = orig;
+    }
+  });
+  document.getElementById('btnCreateReset').addEventListener('click', () => {
+    document.getElementById('newTaskName').value = '';
+    document.getElementById('newTaskStatus').value = '진행 중';
+    hideStatus();
   });
 
   loadExecutives();

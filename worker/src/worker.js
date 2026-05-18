@@ -73,6 +73,15 @@ export default {
         const execId = url.searchParams.get('executive_id') || '';
         return jsonResponse(await handleBasicTasks(dbId, execId, env), env);
       }
+      if (url.pathname === '/api/basic-task' && request.method === 'POST') {
+        return jsonResponse(await handleBasicTaskCreate(request, env), env);
+      }
+      if (url.pathname === '/api/basic-task' && request.method === 'PATCH') {
+        return jsonResponse(await handleBasicTaskUpdate(request, env), env);
+      }
+      if (url.pathname === '/api/basic-task' && request.method === 'DELETE') {
+        return jsonResponse(await handleBasicTaskDelete(request, env), env);
+      }
       if (url.pathname === '/api/save-basic' && request.method === 'POST') {
         return jsonResponse(await handleSaveBasic(request, env), env);
       }
@@ -288,7 +297,115 @@ async function handleSave(request, env) {
   };
 }
 
-// 기본과제 업데이트 이력 DB 컬럼
+// 고유과제(기본과제) 마스터 DB 컬럼
+const BT_PROP_NAME = '고유과제 명';
+const BT_PROP_OWNER = '담당 임원';
+const BT_PROP_STATUS = '진행 상태';
+
+async function handleBasicTaskCreate(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const db = (body.db || '').trim();
+  const name = (body.name || '').trim();
+  const ownerId = (body.owner_id || '').trim();
+  const status = (body.status || '진행 중').trim();
+
+  if (!db) return { error: 'db 파라미터 누락' };
+  if (!name) return { error: '과제명을 입력하세요.' };
+  if (!ownerId) return { error: '담당 임원이 필요합니다.' };
+
+  let dataSourceId;
+  try { dataSourceId = await resolveDataSourceId(db, env); }
+  catch (e) { return { error: e.message }; }
+
+  // title 속성명 자동 감지
+  let titleProp = null;
+  try {
+    const ds = await notion(`/data_sources/${dataSourceId}`, {}, env);
+    for (const [k, v] of Object.entries(ds.properties || {})) {
+      if (v.type === 'title') { titleProp = k; break; }
+    }
+  } catch (e) { return { error: `스키마 조회 실패: ${e.message}` }; }
+  if (!titleProp) return { error: 'title 속성을 찾을 수 없습니다.' };
+
+  const properties = {
+    [titleProp]: { title: [{ text: { content: name } }] },
+    [BT_PROP_OWNER]: { relation: [{ id: ownerId }] },
+    [BT_PROP_STATUS]: { select: { name: status } },
+  };
+
+  try {
+    const created = await notion('/pages', {
+      method: 'POST',
+      body: JSON.stringify({
+        parent: { type: 'data_source_id', data_source_id: dataSourceId },
+        properties,
+      }),
+    }, env);
+    return { ok: true, page_id: created.id, url: created.url };
+  } catch (e) {
+    return { error: `생성 실패: ${e.message}` };
+  }
+}
+
+async function handleBasicTaskUpdate(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const taskId = (body.task_id || '').trim();
+  const name = (body.name || '').trim();
+  const status = (body.status || '').trim();
+
+  if (!taskId) return { error: 'task_id 필요.' };
+
+  // task의 title 속성명 자동 감지
+  let titleProp = null;
+  try {
+    const page = await notion(`/pages/${taskId}`, {}, env);
+    for (const [k, v] of Object.entries(page.properties || {})) {
+      if (v.type === 'title') { titleProp = k; break; }
+    }
+  } catch (e) { return { error: `과제 조회 실패: ${e.message}` }; }
+
+  const properties = {};
+  if (name && titleProp) properties[titleProp] = { title: [{ text: { content: name } }] };
+  if (status) properties[BT_PROP_STATUS] = { select: { name: status } };
+  if (Object.keys(properties).length === 0) return { error: '수정할 항목이 없습니다.' };
+
+  try {
+    const updated = await notion(`/pages/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ properties }),
+    }, env);
+    return { ok: true, page_id: updated.id };
+  } catch (e) {
+    return { error: `수정 실패: ${e.message}` };
+  }
+}
+
+async function handleBasicTaskDelete(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const taskId = (body.task_id || '').trim();
+  if (!taskId) return { error: 'task_id 필요.' };
+
+  try {
+    await notion(`/pages/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ in_trash: true }),
+    }, env);
+    return { ok: true };
+  } catch (e) {
+    return { error: `삭제 실패: ${e.message}` };
+  }
+}
+
+// 고유과제(기본과제) 업데이트 이력 DB 컬럼
 const BH_PROP_TITLE = '제목';
 const BH_PROP_REPORTER = '작성자'; // (구버전: '보고자')
 const BH_PROP_DATE = '작성일자';
