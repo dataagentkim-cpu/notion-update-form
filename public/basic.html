@@ -395,6 +395,8 @@
   <div class="tabs" id="modeTabs" style="display:none">
     <button type="button" class="tab active" data-mode="progress">진척사항 입력</button>
     <button type="button" class="tab" data-mode="create">+ 신규 과제</button>
+    <button type="button" class="tab" data-mode="edit">과제 수정</button>
+    <button type="button" class="tab" data-mode="delete">과제 삭제</button>
   </div>
 
   <!-- 공통: 작성자/날짜 -->
@@ -458,6 +460,47 @@
     <div class="actions">
       <button type="submit" id="btnCreate" class="btn btn-primary">➕ 신규 과제 생성</button>
       <button type="button" id="btnCreateReset" class="btn">초기화</button>
+    </div>
+  </form>
+
+  <!-- 과제 수정 모드 -->
+  <form id="editForm" class="mode-panel" data-panel="edit">
+    <div class="field">
+      <label class="field-label">수정할 고유과제 선택 <span class="req">*</span></label>
+      <div id="editTaskList" class="radio-list">
+        <div class="radio-empty">로딩 중...</div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label" for="editTaskName">고유과제 명 <span class="req">*</span></label>
+      <input id="editTaskName" class="input" type="text" disabled placeholder="과제를 먼저 선택하세요"/>
+    </div>
+    <div class="field">
+      <label class="field-label" for="editTaskDesc">세부내용</label>
+      <textarea id="editTaskDesc" class="textarea" disabled placeholder="과제를 선택하면 기존 내용이 표시됩니다"></textarea>
+    </div>
+    <div class="actions">
+      <button type="submit" id="btnEdit" class="btn btn-primary" disabled>✏️ 수정 완료</button>
+      <button type="button" id="btnEditCancel" class="btn">취소</button>
+    </div>
+  </form>
+
+  <!-- 과제 삭제 모드 -->
+  <form id="deleteForm" class="mode-panel" data-panel="delete">
+    <div class="field">
+      <label class="field-label">삭제할 고유과제 선택 <span class="req">*</span></label>
+      <div id="deleteTaskList" class="radio-list">
+        <div class="radio-empty">로딩 중...</div>
+      </div>
+    </div>
+    <div class="field">
+      <div style="padding:12px 14px;background:var(--danger-bg);color:var(--danger);border-radius:9px;font-size:13px">
+        ⚠ 삭제하면 노션의 휴지통으로 이동합니다. 복원은 노션 UI에서 가능합니다.
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" id="btnDelete" class="btn btn-primary" disabled
+        style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);box-shadow:0 4px 14px rgba(220,38,38,0.35)">🗑 과제 삭제</button>
     </div>
   </form>
 
@@ -852,6 +895,134 @@
     document.getElementById('newTaskName').value = '';
     document.getElementById('newTaskDesc').value = '';
     hideStatus();
+  });
+
+  // ─── 수정/삭제 모드 공통: 본인 담당 과제 라디오 리스트 ───
+  function renderTaskRadioList(containerId, name, onSelect) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    const items = [...initiativeMap.entries()];
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'radio-empty';
+      empty.textContent = '본인 담당 과제가 없습니다';
+      container.appendChild(empty);
+      return;
+    }
+    for (const [id, taskName] of items) {
+      const label = document.createElement('label');
+      label.className = 'radio-card';
+      const input = document.createElement('input');
+      input.type = 'radio'; input.name = name; input.value = id;
+      input.addEventListener('change', () => onSelect && onSelect(id, taskName));
+      const span = document.createElement('span');
+      span.className = 'radio-card-text';
+      span.textContent = taskName;
+      label.appendChild(input);
+      label.appendChild(span);
+      container.appendChild(label);
+    }
+  }
+
+  // ─── 수정 모드 ───
+  let editingTaskId = null;
+  async function onEditSelect(id, taskName) {
+    editingTaskId = id;
+    const nameInput = document.getElementById('editTaskName');
+    const descInput = document.getElementById('editTaskDesc');
+    const btn = document.getElementById('btnEdit');
+    nameInput.disabled = true; descInput.disabled = true; btn.disabled = true;
+    nameInput.value = '불러오는 중...'; descInput.value = '';
+    try {
+      const r = await fetch(WORKER_URL + '/api/basic-task?task_id=' + encodeURIComponent(id));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || '조회 실패');
+      nameInput.value = d.name || taskName;
+      descInput.value = d.description || '';
+      nameInput.disabled = false; descInput.disabled = false; btn.disabled = false;
+    } catch (err) {
+      showStatus('❌ 과제 정보 로드 실패: ' + err.message, 'error');
+      nameInput.value = ''; descInput.value = '';
+    }
+  }
+  document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+    if (!editingTaskId) { showStatus('❌ 과제를 선택하세요.', 'error'); return; }
+    const name = document.getElementById('editTaskName').value.trim();
+    const description = document.getElementById('editTaskDesc').value;
+    if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
+    const btn = document.getElementById('btnEdit');
+    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 수정 중...';
+    try {
+      const res = await fetch(WORKER_URL + '/api/basic-task', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: editingTaskId, name, description }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      showStatus('✅ 과제가 수정되었습니다: ' + name, 'success');
+      await loadBasicTasks();
+      renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
+    } catch (err) {
+      showStatus('❌ 수정 실패: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.innerHTML = orig;
+    }
+  });
+  document.getElementById('btnEditCancel').addEventListener('click', () => {
+    editingTaskId = null;
+    document.getElementById('editTaskName').value = '';
+    document.getElementById('editTaskDesc').value = '';
+    document.getElementById('editTaskName').disabled = true;
+    document.getElementById('editTaskDesc').disabled = true;
+    document.getElementById('btnEdit').disabled = true;
+    const checked = document.querySelector('input[name="edit-task"]:checked');
+    if (checked) checked.checked = false;
+    hideStatus();
+  });
+
+  // ─── 삭제 모드 ───
+  let deletingTaskId = null;
+  function onDeleteSelect(id) {
+    deletingTaskId = id;
+    document.getElementById('btnDelete').disabled = false;
+  }
+  document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+    if (!deletingTaskId) return;
+    const taskName = initiativeMap.get(deletingTaskId) || '(과제)';
+    if (!confirm(`정말 삭제할까요?\n\n- ${taskName}\n\n노션 휴지통으로 이동합니다.`)) return;
+    const btn = document.getElementById('btnDelete');
+    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 삭제 중...';
+    try {
+      const res = await fetch(WORKER_URL + '/api/basic-task', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: deletingTaskId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
+      deletingTaskId = null;
+      await loadBasicTasks();
+      renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
+    } catch (err) {
+      showStatus('❌ 삭제 실패: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.innerHTML = orig;
+    }
+  });
+
+  // 모드 진입 시 라디오 리스트 새로고침
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => {
+      const m = t.dataset.mode;
+      if (m === 'edit') renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
+      else if (m === 'delete') renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
+    });
   });
 
   loadExecutives();

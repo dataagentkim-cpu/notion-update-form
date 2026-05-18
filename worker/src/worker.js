@@ -82,6 +82,9 @@ export default {
       if (url.pathname === '/api/basic-task' && request.method === 'DELETE') {
         return jsonResponse(await handleBasicTaskDelete(request, env), env);
       }
+      if (url.pathname === '/api/basic-task' && request.method === 'GET') {
+        return jsonResponse(await handleBasicTaskGet(url.searchParams.get('task_id') || '', env), env);
+      }
       if (url.pathname === '/api/save-basic' && request.method === 'POST') {
         return jsonResponse(await handleSaveBasic(request, env), env);
       }
@@ -360,7 +363,7 @@ async function handleBasicTaskUpdate(request, env) {
 
   const taskId = (body.task_id || '').trim();
   const name = (body.name || '').trim();
-  const status = (body.status || '').trim();
+  const description = body.description != null ? String(body.description) : null;
 
   if (!taskId) return { error: 'task_id 필요.' };
 
@@ -375,7 +378,9 @@ async function handleBasicTaskUpdate(request, env) {
 
   const properties = {};
   if (name && titleProp) properties[titleProp] = { title: [{ text: { content: name } }] };
-  if (status) properties[BT_PROP_STATUS] = { select: { name: status } };
+  if (description !== null) {
+    properties[BT_PROP_DESC] = { rich_text: description ? [{ text: { content: description } }] : [] };
+  }
   if (Object.keys(properties).length === 0) return { error: '수정할 항목이 없습니다.' };
 
   try {
@@ -386,6 +391,26 @@ async function handleBasicTaskUpdate(request, env) {
     return { ok: true, page_id: updated.id };
   } catch (e) {
     return { error: `수정 실패: ${e.message}` };
+  }
+}
+
+// 단일 과제의 현재 값(이름/세부내용) 반환 — 수정 모드에서 폼 자동 채움
+async function handleBasicTaskGet(taskId, env) {
+  if (!taskId) return { error: 'task_id 필요.' };
+  try {
+    const page = await notion(`/pages/${taskId}`, {}, env);
+    const props = page.properties || {};
+    let name = '';
+    let description = '';
+    for (const [k, v] of Object.entries(props)) {
+      if (v.type === 'title') name = (v.title || []).map((s) => s.plain_text || '').join('');
+      if (k === BT_PROP_DESC && v.type === 'rich_text') {
+        description = (v.rich_text || []).map((s) => s.plain_text || '').join('');
+      }
+    }
+    return { ok: true, name, description };
+  } catch (e) {
+    return { error: `과제 조회 실패: ${e.message}` };
   }
 }
 
