@@ -1,0 +1,8 @@
+name = "notion-update-form-basic"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+
+[vars]
+BASIC_HISTORY_DATA_SOURCE_ID  = "35d056cc-7000-8082-ad5b-000b3c61f173"
+EXECUTIVES_DATA_SOURCE_ID     = "a665a38b-0acf-4b86-8a65-4611413419df"
+ALLOWED_ORIGIN                = "https://dataagentkim-cpu.github.io"

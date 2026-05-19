@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'public/**'
+      - 'strategic/public/**'
+      - 'basic/public/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch: {}
 
@@ -25,9 +26,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Build site
+        run: |
+          mkdir -p _site/strategic _site/basic
+          cp -r strategic/public/* _site/strategic/
+          cp -r basic/public/* _site/basic/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: ./_site
       - id: deployment
         uses: actions/deploy-pages@v4

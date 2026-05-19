@@ -1,0 +1,9 @@
+name = "notion-update-form-strategic"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+
+[vars]
+STATUS_UPDATES_DATA_SOURCE_ID = "92ba1af2-5b00-4993-b43e-67fb2749dd4d"
+INITIATIVES_DATA_SOURCE_ID    = "0eb13c4f-c392-48b6-b3bf-d186847b0075"
+EXECUTIVES_DATA_SOURCE_ID     = "a665a38b-0acf-4b86-8a65-4611413419df"
+ALLOWED_ORIGIN                = "https://dataagentkim-cpu.github.io"
