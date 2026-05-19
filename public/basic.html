@@ -399,6 +399,9 @@
     <button type="button" class="tab" data-mode="delete">과제 삭제</button>
   </div>
 
+  <!-- 상태 알림 (탭 바로 아래에 배치) -->
+  <div id="status" class="status" role="status" aria-live="polite" style="margin-bottom:14px"></div>
+
   <!-- 공통: 작성자/날짜 -->
   <div class="field-row">
     <div class="field" id="authorField">
@@ -503,8 +506,6 @@
         style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);box-shadow:0 4px 14px rgba(220,38,38,0.35)">🗑 과제 삭제</button>
     </div>
   </form>
-
-  <div id="status" class="status" role="status" aria-live="polite"></div>
   </div>
 </div>
 
@@ -621,9 +622,7 @@
   function showStatus(message, type) {
     status.textContent = message;
     status.className = 'status show status-' + type;
-    if (type === 'success') {
-      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
-    }
+    try { status.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
   }
   function hideStatus() {
     status.className = 'status';
