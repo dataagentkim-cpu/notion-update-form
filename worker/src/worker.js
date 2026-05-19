@@ -453,8 +453,9 @@ async function handleBasicTaskDelete(request, env) {
 }
 
 // 고유과제(기본과제) 업데이트 이력 DB 컬럼
-const BH_PROP_TITLE = '제목';
-const BH_PROP_REPORTER = '작성자'; // (구버전: '보고자')
+const BH_PROP_TITLE = '고유과제명';     // title — 과제명 + 링크
+const BH_PROP_SUMMARY = '요약제목';     // rich_text — 사용자 입력 제목
+const BH_PROP_REPORTER = '작성자';
 const BH_PROP_DATE = '작성일자';
 const BH_PROP_CONTENT = '상세내용';
 const BH_PROP_TASK = '기본과제';
@@ -556,10 +557,14 @@ async function handleSaveBasic(request, env) {
   if (!authorId) return { error: '작성자(임원)를 선택하세요.' };
   if (!summary)  return { error: '제목을 입력하세요.' };
 
-  // 제목은 업데이트 요약만. 기본과제 연결은 별도 relation으로 처리.
+  // title은 고유과제명(+링크), 요약제목은 사용자 입력
+  const taskUrl = `https://www.notion.so/${taskId.replace(/-/g, '')}`;
   const properties = {
     [BH_PROP_TITLE]: {
-      title: [{ text: { content: summary } }],
+      title: [{ text: { content: taskName || '고유과제', link: { url: taskUrl } } }],
+    },
+    [BH_PROP_SUMMARY]: {
+      rich_text: [{ text: { content: summary } }],
     },
     [BH_PROP_REPORTER]: { relation: [{ id: authorId }] },
   };
