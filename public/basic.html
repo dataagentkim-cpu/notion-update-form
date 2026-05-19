@@ -883,8 +883,13 @@
       showStatus('✅ 신규 과제가 생성되었습니다: ' + name, 'success');
       document.getElementById('newTaskName').value = '';
       document.getElementById('newTaskDesc').value = '';
-      // 진척사항 모드의 라디오 리스트 새로고침
-      await loadBasicTasks();
+      // 즉시 라디오 리스트에 반영
+      if (data.page_id) initiativeMap.set(data.page_id, name);
+      const list = [...initiativeMap.entries()].map(([id, nm]) => ({ id, name: nm }));
+      renderInitiatives(list, '본인 담당 과제가 없습니다');
+      renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
+      renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
+      setTimeout(() => loadBasicTasks(), 1500);
     } catch (err) {
       showStatus('❌ 생성 실패: ' + err.message, 'error');
     } finally {
@@ -963,8 +968,13 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       showStatus('✅ 과제가 수정되었습니다: ' + name, 'success');
-      await loadBasicTasks();
+      // 즉시 클라이언트 측 이름 갱신
+      initiativeMap.set(editingTaskId, name);
+      const list = [...initiativeMap.entries()].map(([id, nm]) => ({ id, name: nm }));
+      renderInitiatives(list, '본인 담당 과제가 없습니다');
       renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
+      renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
+      setTimeout(() => loadBasicTasks(), 1500);
     } catch (err) {
       showStatus('❌ 수정 실패: ' + err.message, 'error');
     } finally {
@@ -1006,9 +1016,16 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
-      deletingTaskId = null;
-      await loadBasicTasks();
+      // 노션 인덱싱 지연을 우회하기 위해 클라이언트 측에서 즉시 제거
+      initiativeMap.delete(deletingTaskId);
+      const remaining = [...initiativeMap.entries()].map(([id, name]) => ({ id, name }));
+      renderInitiatives(remaining, '본인 담당 과제가 없습니다');
       renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
+      renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
+      deletingTaskId = null;
+      document.getElementById('btnDelete').disabled = true;
+      // 백그라운드 재동기화 (지연 후)
+      setTimeout(() => loadBasicTasks(), 1500);
     } catch (err) {
       showStatus('❌ 삭제 실패: ' + err.message, 'error');
     } finally {
