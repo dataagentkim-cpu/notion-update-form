@@ -415,6 +415,8 @@ async function handleBasicTaskGet(taskId, env) {
 }
 
 async function handleBasicTaskDelete(request, env) {
+  // 실제 archive가 아니라 진행 상태를 '보류'로 변경 (soft-delete)
+  // 노션 자동화가 즉시 되돌릴 수 있어 시간차로 2회 시도 + 검증
   let body;
   try { body = await request.json(); }
   catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
@@ -422,11 +424,28 @@ async function handleBasicTaskDelete(request, env) {
   const taskId = (body.task_id || '').trim();
   if (!taskId) return { error: 'task_id 필요.' };
 
+  const patchBody = JSON.stringify({
+    properties: { [BT_PROP_STATUS]: { select: { name: '보류' } } },
+  });
+  const tryPatch = async () => {
+    await notion(`/pages/${taskId}`, { method: 'PATCH', body: patchBody }, env);
+  };
+
   try {
-    await notion(`/pages/${taskId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ in_trash: true }),
-    }, env);
+    await tryPatch();
+    // 자동화 race 회피 — 1.5초 뒤 검증 + 필요 시 재시도
+    await new Promise((r) => setTimeout(r, 1500));
+    const p1 = await notion(`/pages/${taskId}`, {}, env);
+    const cur = p1.properties?.[BT_PROP_STATUS]?.select?.name;
+    if (cur !== '보류') {
+      await tryPatch();
+      await new Promise((r) => setTimeout(r, 800));
+      const p2 = await notion(`/pages/${taskId}`, {}, env);
+      const cur2 = p2.properties?.[BT_PROP_STATUS]?.select?.name;
+      if (cur2 !== '보류') {
+        return { ok: false, warning: `진행 상태가 자동화에 의해 즉시 복원됨 (현재: ${cur2}). 노션 자동화 규칙 확인 필요.` };
+      }
+    }
     return { ok: true };
   } catch (e) {
     return { error: `삭제 실패: ${e.message}` };
@@ -491,18 +510,28 @@ async function handleBasicTasks(dbOrPageId, executiveId, env) {
   if (!titleProp) return { error: '제목(title) 속성을 찾을 수 없습니다.' };
 
   // executive_id 주어졌고 owner relation 속성이 있으면 필터링
+  // + 진행 상태 '보류' 제외 (soft-deleted 과제)
   const query = { sorts: [{ property: titleProp, direction: 'ascending' }] };
+  let baseFilter = null;
   if (executiveId && ownerProps.length > 0) {
-    query.filter = ownerProps.length === 1
+    baseFilter = ownerProps.length === 1
       ? { property: ownerProps[0], relation: { contains: executiveId } }
       : { or: ownerProps.map((p) => ({ property: p, relation: { contains: executiveId } })) };
   }
+  const statusFilter = { property: BT_PROP_STATUS, select: { does_not_equal: '보류' } };
+  query.filter = baseFilter ? { and: [baseFilter, statusFilter] } : statusFilter;
 
   let pages;
   try {
     pages = await queryAll(dataSourceId, query, env);
   } catch (e) {
-    return { error: `기본과제 조회 실패: ${e.message}` };
+    // 진행 상태 속성이 없는 DB라면 status 필터 빼고 재시도
+    try {
+      query.filter = baseFilter;
+      pages = baseFilter ? await queryAll(dataSourceId, query, env) : await queryAll(dataSourceId, { sorts: query.sorts }, env);
+    } catch (e2) {
+      return { error: `기본과제 조회 실패: ${e2.message}` };
+    }
   }
 
   const tasks = pages
