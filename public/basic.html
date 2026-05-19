@@ -495,7 +495,7 @@
     </div>
     <div class="field">
       <div style="padding:12px 14px;background:var(--danger-bg);color:var(--danger);border-radius:9px;font-size:13px">
-        ⚠ 삭제하면 노션의 휴지통으로 이동합니다. 복원은 노션 UI에서 가능합니다.
+        ⚠ 삭제 후에는 되돌리기 어려우니 신중히 진행해주세요.
       </div>
     </div>
     <div class="actions">
@@ -994,7 +994,7 @@
     hideStatus();
     if (!deletingTaskId) return;
     const taskName = initiativeMap.get(deletingTaskId) || '(과제)';
-    if (!confirm(`정말 삭제할까요?\n\n- ${taskName}\n\n노션 휴지통으로 이동합니다.`)) return;
+    if (!confirm(`정말 삭제할까요?\n\n- ${taskName}\n\n삭제 후에는 되돌리기 어렵습니다.`)) return;
     const btn = document.getElementById('btnDelete');
     btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 삭제 중...';
     try {
