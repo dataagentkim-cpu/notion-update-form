@@ -19,18 +19,21 @@ const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2025-09-03';
 
 // Property names — adjust if your Notion schema uses different names.
-const SU_PROP_TITLE = '전략과제명';
-const SU_PROP_SUMMARY = '요약제목';
+// 노션 schema 변경 반영 (2026-05):
+//   - title 컬럼: '전략과제명' → '요약제목'으로 rename
+//   - relation '전략과제 명 1' → '전략과제명'
+//   - 별도 rich_text '요약제목' 컬럼 사라짐 (title이 그 역할)
+//   - '전략과제_대분류'는 rollup 자동 처리 (직접 세팅 불가)
+const SU_PROP_TITLE = '요약제목';
 const SU_PROP_CONTENT = '상세내용';
 const SU_PROP_DATE = '작성일자';
 const SU_PROP_AUTHOR = '작성자';
-const SU_PROP_INITIATIVE = '전략과제 명 1';
-const SU_PROP_DAEBUNRYU = '전략과제_대분류'; // 대시보드 그룹핑용 (전략과제에서 복사)
-const SU_PROP_PRIORITY = '중요도'; // 대시보드 게시 / 과제이력 관리
+const SU_PROP_INITIATIVE = '전략과제명';
+const SU_PROP_PRIORITY = '중요도';
 const SU_PROP_FILES = '파일과 미디어';
 const EX_PROP_NAME = '성명';
 const INIT_PROP_NAME = '전략과제명';
-const INIT_PROP_DAEBUNRYU = '전략과제_대분류';
+// INIT_PROP_DAEBUNRYU: 더 이상 사용 안 함 (이력 DB의 대분류가 rollup으로 자동 처리됨)
 // 전략과제 DB에서 임원과 연결된 relation 속성 후보들 (둘 중 하나라도 매칭되면 본인 과제로 인정)
 const INIT_PROP_OWNER_CANDIDATES = ['담당 임원', '참여 임원'];
 
@@ -236,35 +239,14 @@ async function handleSave(request, env) {
 
   const warnings = [];
 
-  // 선택한 전략과제의 대분류를 가져와 함께 세팅 (대시보드 그룹핑 위해 필요)
-  let daebunRelation = [];
-  try {
-    const initPage = await notion(`/pages/${initiativeId}`, {}, env);
-    const rel = initPage.properties?.[INIT_PROP_DAEBUNRYU]?.relation || [];
-    daebunRelation = rel.map((r) => ({ id: r.id }));
-  } catch (e) {
-    warnings.push(`전략과제 대분류 조회 실패: ${e.message}`);
-  }
-
-  const initiativeUrl = `https://www.notion.so/${initiativeId.replace(/-/g, '')}`;
+  // title은 사용자가 입력한 '요약제목' 자체. 대분류는 이력 DB에서 rollup으로 자동 표시됨.
   const properties = {
     [SU_PROP_TITLE]: {
-      title: [{
-        text: {
-          content: initiativeName || '전략과제',
-          link: { url: initiativeUrl },
-        },
-      }],
-    },
-    [SU_PROP_SUMMARY]: {
-      rich_text: [{ text: { content: summary } }],
+      title: [{ text: { content: summary } }],
     },
     [SU_PROP_INITIATIVE]: { relation: [{ id: initiativeId }] },
     [SU_PROP_AUTHOR]: { relation: [{ id: authorId }] },
   };
-  if (daebunRelation.length > 0) {
-    properties[SU_PROP_DAEBUNRYU] = { relation: daebunRelation };
-  }
   if (['대시보드 게시','과제이력 관리'].includes(priority)) {
     properties[SU_PROP_PRIORITY] = { select: { name: priority } };
   }
