@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
-<title>전략과제 업데이트 입력</title>
+<title>전략과제 관리</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,7 +20,6 @@
     --text-secondary: rgba(0, 0, 0, 0.55);
     --text-tertiary: rgba(0, 0, 0, 0.40);
     --accent:       #4f46e5;
-    --accent-2:     #7c3aed;
     --accent-bg:    #eef2ff;
     --success:      #059669;
     --success-bg:   #ecfdf5;
@@ -71,7 +70,7 @@
   }
   @media (max-width: 520px) {
     body { padding: 6px 0 calc(14px + env(safe-area-inset-bottom)); }
-    .card { padding: 14px 10px 16px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .card { padding: 14px 10px 16px; border-radius: 12px; }
     .header { gap: 10px; margin-bottom: 14px; padding-bottom: 12px; }
     .header-icon { width: 34px; height: 34px; border-radius: 10px; }
     .header-icon svg { width: 18px; height: 18px; }
@@ -110,22 +109,17 @@
     display: flex; gap: 4px; padding: 4px;
     background: var(--input-bg);
     border: 1px solid var(--card-border);
-    border-radius: 11px; margin-bottom: 16px;
-    overflow-x: auto;
+    border-radius: 11px; margin-bottom: 16px; overflow-x: auto;
   }
   .tab {
-    flex: 1; min-width: max-content;
-    padding: 9px 14px; background: transparent; border: none;
-    border-radius: 8px; font-family: inherit;
-    font-size: 13px; font-weight: 600;
+    flex: 1; min-width: max-content; padding: 9px 14px;
+    background: transparent; border: none; border-radius: 8px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
     color: var(--text-secondary); cursor: pointer;
     transition: background 0.15s, color 0.15s; white-space: nowrap;
   }
   .tab:hover { color: var(--text-primary); }
-  .tab.active {
-    background: var(--card-bg); color: var(--accent);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  }
+  .tab.active { background: var(--card-bg); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
   .mode-panel { display: none; }
   .mode-panel.active { display: block; }
 
@@ -135,6 +129,7 @@
     display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
     font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;
   }
+  .field-hint { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
   .req { color: var(--required); font-weight: 700; }
   .field-row { display: grid; grid-template-columns: 1fr; gap: 14px; }
   @media (min-width: 520px) { .field-row { grid-template-columns: 1fr 1fr; } }
@@ -145,16 +140,12 @@
     border: 1.5px solid var(--input-border); border-radius: 10px;
     font-family: inherit; font-size: 16px; line-height: 1.4;
     color: var(--text-primary);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     -webkit-appearance: none; appearance: none;
   }
-  .input:hover, .textarea:hover, .select:hover:not(:disabled) {
-    border-color: rgba(0,0,0,0.25);
-  }
+  .input:hover, .textarea:hover, .select:hover:not(:disabled) { border-color: rgba(0,0,0,0.25); }
   @media (prefers-color-scheme: dark) {
-    .input:hover, .textarea:hover, .select:hover:not(:disabled) {
-      border-color: rgba(255,255,255,0.25);
-    }
+    .input:hover, .textarea:hover, .select:hover:not(:disabled) { border-color: rgba(255,255,255,0.25); }
   }
   .select {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
@@ -165,83 +156,62 @@
     outline: none; border-color: var(--input-focus);
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
   }
+  .input:disabled, .textarea:disabled { opacity: 0.55; cursor: not-allowed; }
   .input::placeholder, .textarea::placeholder { color: var(--text-tertiary); }
   input[type="date"] { min-height: 46px; }
-  .textarea { resize: vertical; min-height: 130px; line-height: 1.55; }
+  .textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
 
   /* Author chip */
   .author-chip {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 10px 14px; background: var(--accent-bg); color: var(--accent);
-    border-radius: 9px; font-size: 15px; font-weight: 600;
-    border: 1.5px solid transparent;
+    border-radius: 9px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent;
   }
   .author-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-  /* Radio card list */
-  .radio-list { display: grid; grid-template-columns: 1fr; gap: 8px; }
-  .radio-card {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px; background: var(--input-bg);
+  /* People picker */
+  .people-picker {
+    position: relative;
     border: 1.5px solid var(--input-border); border-radius: 10px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s, transform 0.08s, box-shadow 0.2s;
-    -webkit-tap-highlight-color: transparent;
+    padding: 8px 10px; background: var(--input-bg);
+    cursor: text; transition: border-color 0.2s, box-shadow 0.2s;
+    min-height: 46px; display: flex; flex-direction: column; gap: 6px;
   }
-  .radio-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12); }
-  .radio-card:active { transform: scale(0.99); }
-  .radio-card input[type="radio"] {
-    appearance: none; -webkit-appearance: none;
-    width: 18px; height: 18px; border: 2px solid var(--input-border);
-    border-radius: 50%; margin: 0; flex-shrink: 0;
-    position: relative; cursor: pointer; transition: border-color 0.15s;
+  .people-picker:focus-within {
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
   }
-  .radio-card input[type="radio"]:checked { border-color: var(--accent); }
-  .radio-card input[type="radio"]:checked::after {
-    content: ''; position: absolute; inset: 3px;
-    border-radius: 50%; background: var(--accent);
+  .people-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ptag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; background: var(--accent-bg); color: var(--accent);
+    border-radius: 20px; font-size: 13px; font-weight: 600;
   }
-  .radio-card:has(input[type="radio"]:checked) {
-    border-color: var(--accent); background: var(--accent-bg);
+  .ptag-rm {
+    background: none; border: none; cursor: pointer;
+    color: var(--accent); font-size: 16px; line-height: 1;
+    padding: 0 2px; opacity: 0.7; font-family: inherit;
   }
-  .radio-card-text { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; color: var(--text-primary); }
-  .radio-empty {
-    padding: 14px; border: 1.5px dashed var(--input-border); border-radius: 9px;
-    text-align: center; color: var(--text-secondary); font-size: 14px;
+  .ptag-rm:hover { opacity: 1; }
+  .people-input {
+    border: none; background: transparent; outline: none;
+    font-family: inherit; font-size: 15px; color: var(--text-primary);
+    width: 100%; padding: 2px 4px; min-width: 80px;
   }
-
-  /* Checkbox card list */
-  .check-list { display: grid; grid-template-columns: 1fr; gap: 6px; }
-  @media (min-width: 420px) { .check-list { grid-template-columns: 1fr 1fr; } }
-  .check-card {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; background: var(--input-bg);
-    border: 1.5px solid var(--input-border); border-radius: 10px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s, transform 0.08s;
-    -webkit-tap-highlight-color: transparent;
+  .people-input::placeholder { color: var(--text-tertiary); }
+  .people-dropdown {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+    background: var(--card-bg); border: 1.5px solid var(--input-border);
+    border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    max-height: 200px; overflow-y: auto;
   }
-  .check-card:hover { border-color: var(--accent); }
-  .check-card:active { transform: scale(0.99); }
-  .check-card input[type="checkbox"] {
-    appearance: none; -webkit-appearance: none;
-    width: 17px; height: 17px; border: 2px solid var(--input-border);
-    border-radius: 4px; margin: 0; flex-shrink: 0;
-    position: relative; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  .people-dropdown.show { display: block; }
+  .pdrop-opt {
+    padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--text-primary);
+    transition: background 0.1s;
   }
-  .check-card input[type="checkbox"]:checked {
-    border-color: var(--accent); background: var(--accent);
-  }
-  .check-card input[type="checkbox"]:checked::after {
-    content: ''; position: absolute;
-    left: 3px; top: 0px; width: 5px; height: 9px;
-    border: 2px solid #fff; border-top: none; border-left: none;
-    transform: rotate(45deg);
-  }
-  .check-card:has(input[type="checkbox"]:checked) {
-    border-color: var(--accent); background: var(--accent-bg);
-  }
-  .check-card-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; color: var(--text-primary); }
+  .pdrop-opt:hover { background: var(--accent-bg); color: var(--accent); }
+  .pdrop-empty { padding: 10px 14px; font-size: 13px; color: var(--text-tertiary); }
 
   /* Buttons */
   .actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 18px; }
@@ -251,8 +221,7 @@
     min-height: 46px; padding: 0 18px;
     background: var(--card-bg); border: 1.5px solid var(--input-border); border-radius: 11px;
     font-family: inherit; font-size: 15px; font-weight: 600; color: var(--text-primary);
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s, transform 0.08s, box-shadow 0.2s;
+    cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.08s, box-shadow 0.2s;
     -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   }
   .btn:hover { border-color: var(--text-secondary); }
@@ -262,15 +231,11 @@
     background: var(--primary-grad); color: var(--primary-text); border: none;
     box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
   }
-  .btn-primary:hover {
-    filter: brightness(1.08); box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
-    transform: translateY(-1px);
-  }
+  .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45); transform: translateY(-1px); }
   .btn-primary:active { transform: translateY(0) scale(0.98); }
   .btn-danger {
     background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-    color: #fff; border: none;
-    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+    color: #fff; border: none; box-shadow: 0 4px 14px rgba(220,38,38,0.35);
   }
 
   /* Status */
@@ -283,9 +248,13 @@
   .status-error   { background: var(--danger-bg);  color: var(--danger); }
   .status-info    { background: var(--accent-bg);  color: var(--accent); }
 
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; animation: none !important; }
+  .loading-tag {
+    display: inline-block; padding: 4px 10px; background: var(--input-bg);
+    border: 1px dashed var(--input-border); border-radius: 8px;
+    font-size: 13px; color: var(--text-tertiary);
   }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
@@ -304,7 +273,6 @@
     </div>
   </header>
 
-  <!-- 모드 탭 (?mode=full 일 때만 표시) -->
   <div class="tabs" id="modeTabs" style="display:none">
     <button type="button" class="tab active" data-mode="progress">진척사항 입력</button>
     <button type="button" class="tab" data-mode="create">+ 신규 과제</button>
@@ -312,7 +280,6 @@
     <button type="button" class="tab" data-mode="delete">과제 삭제</button>
   </div>
 
-  <!-- 상태 알림 -->
   <div id="status" class="status" role="status" aria-live="polite"></div>
 
   <!-- 공통: 작성자/날짜 -->
@@ -332,13 +299,13 @@
     </div>
   </div>
 
-  <!-- ── 진척사항 입력 모드 ── -->
+  <!-- ── 진척사항 입력 ── -->
   <form id="updateForm" class="mode-panel active" data-panel="progress">
     <div class="field">
-      <label class="field-label">전략과제명 <span class="req">*</span></label>
-      <div id="initiativeList" class="radio-list">
-        <div class="radio-empty">먼저 작성자를 선택하세요</div>
-      </div>
+      <label class="field-label" for="initiativeSel">전략과제명 <span class="req">*</span></label>
+      <select id="initiativeSel" class="select" required>
+        <option value="">먼저 작성자를 선택하세요</option>
+      </select>
     </div>
     <div class="field">
       <label class="field-label" for="summary">요약 제목 <span class="req">*</span></label>
@@ -371,24 +338,23 @@
     </div>
   </form>
 
-  <!-- ── 신규 과제 모드 ── -->
+  <!-- ── 신규 과제 ── -->
   <form id="createForm" class="mode-panel" data-panel="create">
     <div class="field">
       <label class="field-label" for="newTaskName">전략과제 명 <span class="req">*</span></label>
-      <input id="newTaskName" class="input" type="text"
-             placeholder="예) 무바달라 파트너십 확대" autocomplete="off"/>
+      <input id="newTaskName" class="input" type="text" placeholder="예) 무바달라 파트너십 확대" autocomplete="off"/>
     </div>
     <div class="field">
-      <label class="field-label">담당임원 <span class="req">*</span> <span style="font-size:12px;font-weight:400;color:var(--text-secondary)">(1명 이상 선택)</span></label>
-      <div id="createOwnerList" class="check-list">
-        <div class="radio-empty">임원 목록 로딩 중...</div>
-      </div>
+      <label class="field-label" for="newTaskDesc">세부내용</label>
+      <textarea id="newTaskDesc" class="textarea" placeholder="예) 한국과 동남아의 HNW 사업 공동 추진 (한화투자증권 제휴 방식)"></textarea>
     </div>
     <div class="field">
-      <label class="field-label">참여인원 <span style="font-size:12px;font-weight:400;color:var(--text-secondary)">(선택사항)</span></label>
-      <div id="createParticipantList" class="check-list">
-        <div class="radio-empty">임원 목록 로딩 중...</div>
-      </div>
+      <label class="field-label">담당임원 <span class="req">*</span> <span class="field-hint">1명 이상 선택</span></label>
+      <div id="createOwnerPicker"></div>
+    </div>
+    <div class="field">
+      <label class="field-label">참여인원 <span class="field-hint">선택사항</span></label>
+      <div id="createParticipantPicker"></div>
     </div>
     <div class="actions">
       <button type="submit" id="btnCreate" class="btn btn-primary">➕ 신규 과제 생성</button>
@@ -396,43 +362,46 @@
     </div>
   </form>
 
-  <!-- ── 과제 수정 모드 ── -->
+  <!-- ── 과제 수정 ── -->
   <form id="editForm" class="mode-panel" data-panel="edit">
     <div class="field">
-      <label class="field-label">수정할 전략과제 선택 <span class="req">*</span></label>
-      <div id="editTaskList" class="radio-list">
-        <div class="radio-empty">로딩 중...</div>
+      <label class="field-label" for="editInitiativeSel">수정할 과제 선택 <span class="req">*</span></label>
+      <select id="editInitiativeSel" class="select">
+        <option value="">과제를 선택하세요</option>
+      </select>
+    </div>
+    <div id="editFields" style="display:none">
+      <div class="field">
+        <label class="field-label" for="editTaskName">전략과제 명 <span class="req">*</span></label>
+        <input id="editTaskName" class="input" type="text" placeholder="과제명"/>
+      </div>
+      <div class="field">
+        <label class="field-label" for="editTaskDesc">세부내용</label>
+        <textarea id="editTaskDesc" class="textarea" placeholder="세부내용"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">담당임원 <span class="req">*</span></label>
+        <div id="editOwnerPicker"></div>
+      </div>
+      <div class="field">
+        <label class="field-label">참여인원</label>
+        <div id="editParticipantPicker"></div>
       </div>
     </div>
-    <div class="field">
-      <label class="field-label" for="editTaskName">전략과제 명 <span class="req">*</span></label>
-      <input id="editTaskName" class="input" type="text" disabled placeholder="과제를 먼저 선택하세요"/>
-    </div>
-    <div class="field">
-      <label class="field-label">담당임원 <span class="req">*</span></label>
-      <div id="editOwnerList" class="check-list">
-        <div class="radio-empty">과제를 선택하면 기존 담당임원이 표시됩니다</div>
-      </div>
-    </div>
-    <div class="field">
-      <label class="field-label">참여인원</label>
-      <div id="editParticipantList" class="check-list">
-        <div class="radio-empty">과제를 선택하면 기존 참여인원이 표시됩니다</div>
-      </div>
-    </div>
+    <div id="editLoading" style="display:none;padding:12px;color:var(--text-secondary);font-size:14px">⏳ 과제 정보 불러오는 중...</div>
     <div class="actions">
       <button type="submit" id="btnEdit" class="btn btn-primary" disabled>✏️ 수정 완료</button>
       <button type="button" id="btnEditCancel" class="btn">취소</button>
     </div>
   </form>
 
-  <!-- ── 과제 삭제 모드 ── -->
+  <!-- ── 과제 삭제 ── -->
   <form id="deleteForm" class="mode-panel" data-panel="delete">
     <div class="field">
-      <label class="field-label">삭제할 전략과제 선택 <span class="req">*</span></label>
-      <div id="deleteTaskList" class="radio-list">
-        <div class="radio-empty">로딩 중...</div>
-      </div>
+      <label class="field-label" for="deleteInitiativeSel">삭제할 과제 선택 <span class="req">*</span></label>
+      <select id="deleteInitiativeSel" class="select">
+        <option value="">과제를 선택하세요</option>
+      </select>
     </div>
     <div class="field">
       <div style="padding:12px 14px;background:var(--danger-bg);color:var(--danger);border-radius:9px;font-size:13px">
@@ -444,8 +413,8 @@
     </div>
   </form>
 
-  </div><!-- .card -->
-</div><!-- .container -->
+  </div>
+</div>
 
 <script>
   const WORKER_URL = 'https://notion-update-form-strategic.dataagentkim.workers.dev';
@@ -458,49 +427,32 @@
     const r = await fetch(WORKER_URL + '/api/llm-key');
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'AI 키 발급 실패');
-    _llmKeyCache = d;
-    return d;
+    _llmKeyCache = d; return d;
   }
   const POLISH_SYSTEM_PROMPT = `당신은 한화금융그룹 임원이 사장에게 올리는 전략과제 진행 보고를 다듬는 비서입니다.
 임원이 작성한 거친 메모(요약 제목 + 상세 내용)를 받아 사장 보고용 격식체로 정제하여 JSON으로만 응답합니다.
-
-원칙:
-- 사실 보존 최우선: 입력에 없는 수치·일정·조직명·금액·고유명사를 새로 만들거나 추정하지 말 것.
-- 보고체 사용: 명사형 종결(~함, ~예정, ~검토, ~추진, ~조치 등) 중심의 간결하고 객관적인 어조.
-- 구어체·축약어·이모지·감탄사 금지.
-- 모호·중복 표현은 명확하고 간결하게 재작성.
-
-출력 형식:
-- summary: 핵심 보고 요지 30자 이내 한 줄 (명사구 위주, 동사 종결 가능).
-- content: 임원 보고용 단락 3~5줄. 가능하면 진행 경과 → 향후 계획 → 이슈/요청 순으로 구성.`;
+원칙: 사실 보존 최우선. 보고체 사용(~함, ~예정, ~검토). 구어체·이모지 금지.
+출력 형식: summary(30자 이내 한 줄), content(3~5줄 단락).`;
   async function polishViaGemini(summary, content) {
     const { key, model } = await getLlmKey();
-    const userMsg = `[요약 제목 초안]\n${summary || '(없음)'}\n\n[상세 내용 초안]\n${content || '(없음)'}`;
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: POLISH_SYSTEM_PROMPT }] },
-          contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+          contents: [{ role: 'user', parts: [{ text: `[요약 제목 초안]\n${summary || '(없음)'}\n\n[상세 내용 초안]\n${content || '(없음)'}` }] }],
           generationConfig: {
             responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'object',
-              properties: { summary: { type: 'string' }, content: { type: 'string' } },
-              required: ['summary', 'content'],
-            },
-            maxOutputTokens: 1024, temperature: 0.3,
-            thinkingConfig: { thinkingBudget: 0 },
+            responseSchema: { type: 'object', properties: { summary: { type: 'string' }, content: { type: 'string' } }, required: ['summary', 'content'] },
+            maxOutputTokens: 1024, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       }
     );
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || ('Gemini 오류 ' + res.status));
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    try { return JSON.parse(text); }
+    try { return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || ''); }
     catch { return { summary, content }; }
   }
   // ──────────────────────────────────────────────────────────────────
@@ -512,135 +464,147 @@
   const urlAuthorName = (urlParams.get('author') || '').trim();
   const urlMode = (urlParams.get('mode') || '').trim();
 
-  if (urlMode === 'full') {
-    $('modeTabs').style.display = '';
-  }
+  if (urlMode === 'full') $('modeTabs').style.display = '';
 
-  // 모드 탭 동작
   function setMode(mode) {
-    document.querySelectorAll('.tab').forEach((t) => {
-      t.classList.toggle('active', t.dataset.mode === mode);
-    });
-    document.querySelectorAll('.mode-panel').forEach((p) => {
-      p.classList.toggle('active', p.dataset.panel === mode);
-    });
-    $('dateField').style.display = (mode === 'progress') ? '' : 'none';
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+    document.querySelectorAll('.mode-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === mode));
+    $('dateField').style.display = mode === 'progress' ? '' : 'none';
     hideStatus();
+    if (mode === 'edit' || mode === 'delete') refreshManageSelects();
   }
-  document.querySelectorAll('.tab').forEach((t) => {
-    t.addEventListener('click', () => {
-      setMode(t.dataset.mode);
-      const m = t.dataset.mode;
-      if (m === 'edit') renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
-      else if (m === 'delete') renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
-      else if (m === 'create') renderExecCheckboxes();
-    });
-  });
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setMode(t.dataset.mode)));
 
-  // 작성일자
   const offsetMs = new Date().getTimezoneOffset() * 60000;
   const todayStr = () => new Date(Date.now() - offsetMs).toISOString().slice(0, 10);
   $('date').value = todayStr();
 
-  let executiveList = [];       // [{id, name}]
-  let executiveMap = new Map(); // id → name
+  let executiveList = [];
+  let executiveMap = new Map();
   let initiativeMap = new Map(); // id → name
   let currentAuthorId = '';
 
   function showStatus(msg, type) {
     const s = $('status');
-    s.textContent = msg;
-    s.className = 'status show status-' + type;
-    try { s.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+    s.textContent = msg; s.className = 'status show status-' + type;
+    try { s.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch {}
   }
-  function hideStatus() {
-    const s = $('status');
-    s.className = 'status';
-    s.textContent = '';
-  }
+  function hideStatus() { const s = $('status'); s.className = 'status'; s.textContent = ''; }
 
   function lockAuthor(id, name) {
     currentAuthorId = id;
-    $('author').style.display = 'none';
-    $('author').required = false;
+    $('author').style.display = 'none'; $('author').required = false;
     $('authorLocked').style.display = 'inline-flex';
     $('authorLockedName').textContent = name;
   }
 
-  function setSelectOptions(sel, items, placeholder) {
-    const frag = document.createDocumentFragment();
+  function populateInitiativeSel(selId, placeholder) {
+    const sel = $(selId);
+    sel.innerHTML = '';
     const ph = document.createElement('option');
     ph.value = ''; ph.textContent = placeholder;
-    frag.appendChild(ph);
-    for (const it of items) {
+    sel.appendChild(ph);
+    for (const [id, name] of initiativeMap) {
       const opt = document.createElement('option');
-      opt.value = it.id; opt.textContent = it.name;
-      frag.appendChild(opt);
-    }
-    sel.innerHTML = '';
-    sel.appendChild(frag);
-  }
-
-  // 진척사항: 과제 라디오 렌더
-  function renderInitiatives(list, placeholder) {
-    const el = $('initiativeList');
-    el.innerHTML = '';
-    if (!list || list.length === 0) {
-      const d = document.createElement('div');
-      d.className = 'radio-empty'; d.textContent = placeholder || '과제가 없습니다';
-      el.appendChild(d); return;
-    }
-    for (const it of list) {
-      const label = document.createElement('label');
-      label.className = 'radio-card';
-      const inp = document.createElement('input');
-      inp.type = 'radio'; inp.name = 'initiative'; inp.value = it.id; inp.required = true;
-      const span = document.createElement('span');
-      span.className = 'radio-card-text'; span.textContent = it.name;
-      label.appendChild(inp); label.appendChild(span);
-      el.appendChild(label);
-    }
-    if (list.length === 1) {
-      const only = el.querySelector('input[name="initiative"]');
-      if (only) only.checked = true;
+      opt.value = id; opt.textContent = name;
+      sel.appendChild(opt);
     }
   }
 
-  function selectedInitiativeId() {
-    const c = $('initiativeList').querySelector('input[name="initiative"]:checked');
-    return c ? c.value : '';
+  function refreshManageSelects() {
+    populateInitiativeSel('editInitiativeSel', '과제를 선택하세요');
+    populateInitiativeSel('deleteInitiativeSel', '과제를 선택하세요');
+    $('btnDelete').disabled = true;
+    $('btnEdit').disabled = true;
+    $('editFields').style.display = 'none';
   }
 
-  // 임원 체크박스 렌더 (신규/수정 모드)
-  function renderCheckboxList(containerId, checkboxName, selectedIds = []) {
-    const el = $(containerId);
-    el.innerHTML = '';
-    if (executiveList.length === 0) {
-      const d = document.createElement('div');
-      d.className = 'radio-empty'; d.textContent = '임원 목록이 없습니다';
-      el.appendChild(d); return;
+  // ─── People Picker ────────────────────────────────────────────────
+  function PeoplePicker(containerId) {
+    const container = $(containerId);
+    container.innerHTML = '';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'people-picker';
+
+    const tagsEl = document.createElement('div');
+    tagsEl.className = 'people-tags';
+
+    const inputEl = document.createElement('input');
+    inputEl.className = 'people-input';
+    inputEl.placeholder = '이름으로 검색...';
+    inputEl.autocomplete = 'off';
+    inputEl.setAttribute('type', 'text');
+
+    const dropEl = document.createElement('div');
+    dropEl.className = 'people-dropdown';
+
+    wrapper.appendChild(tagsEl);
+    wrapper.appendChild(inputEl);
+    wrapper.appendChild(dropEl);
+    container.appendChild(wrapper);
+
+    const selected = new Map();
+
+    function renderTags() {
+      tagsEl.innerHTML = '';
+      for (const [id, name] of selected) {
+        const tag = document.createElement('span');
+        tag.className = 'ptag';
+        const txt = document.createElement('span');
+        txt.textContent = name;
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'ptag-rm'; rm.textContent = '×';
+        rm.addEventListener('click', (e) => { e.stopPropagation(); selected.delete(id); renderTags(); });
+        tag.append(txt, rm);
+        tagsEl.appendChild(tag);
+      }
     }
-    for (const exec of executiveList) {
-      const label = document.createElement('label');
-      label.className = 'check-card';
-      const inp = document.createElement('input');
-      inp.type = 'checkbox'; inp.name = checkboxName; inp.value = exec.id;
-      if (selectedIds.includes(exec.id)) inp.checked = true;
-      const span = document.createElement('span');
-      span.className = 'check-card-text'; span.textContent = exec.name;
-      label.appendChild(inp); label.appendChild(span);
-      el.appendChild(label);
+
+    function showDrop(query) {
+      dropEl.innerHTML = '';
+      const q = query.trim();
+      const filtered = executiveList.filter(e => !selected.has(e.id) && (!q || e.name.includes(q)));
+      if (filtered.length === 0) {
+        const d = document.createElement('div');
+        d.className = 'pdrop-empty';
+        d.textContent = q ? '검색 결과 없음' : (executiveList.length === 0 ? '임원 목록 로딩 중...' : '선택 가능한 임원이 없습니다');
+        dropEl.appendChild(d);
+      } else {
+        for (const e of filtered) {
+          const opt = document.createElement('div');
+          opt.className = 'pdrop-opt'; opt.textContent = e.name;
+          opt.addEventListener('mousedown', (ev) => {
+            ev.preventDefault();
+            selected.set(e.id, e.name);
+            inputEl.value = ''; renderTags(); dropEl.classList.remove('show');
+          });
+          dropEl.appendChild(opt);
+        }
+      }
+      dropEl.classList.add('show');
     }
+
+    inputEl.addEventListener('focus', () => showDrop(inputEl.value));
+    inputEl.addEventListener('input', () => showDrop(inputEl.value));
+    inputEl.addEventListener('blur', () => setTimeout(() => dropEl.classList.remove('show'), 150));
+    wrapper.addEventListener('click', (e) => { if (!e.target.closest('.ptag-rm')) inputEl.focus(); });
+
+    return {
+      getIds() { return [...selected.keys()]; },
+      setIds(ids) {
+        selected.clear();
+        for (const id of ids) {
+          const e = executiveList.find(x => x.id === id);
+          if (e) selected.set(id, e.name);
+        }
+        renderTags();
+      },
+      reset() { selected.clear(); renderTags(); inputEl.value = ''; },
+    };
   }
 
-  function getCheckedIds(checkboxName) {
-    return [...document.querySelectorAll(`input[name="${checkboxName}"]:checked`)].map(i => i.value);
-  }
-
-  function renderExecCheckboxes() {
-    renderCheckboxList('createOwnerList', 'create-owner', []);
-    renderCheckboxList('createParticipantList', 'create-participant', []);
-  }
+  let pickers = {};
 
   async function loadExecutives() {
     try {
@@ -648,32 +612,37 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       executiveList = data.executives || [];
-      executiveMap = new Map(executiveList.map((e) => [e.id, e.name]));
+      executiveMap = new Map(executiveList.map(e => [e.id, e.name]));
 
+      // 임원 고정
       if (urlAuthorId && executiveMap.has(urlAuthorId)) {
         lockAuthor(urlAuthorId, executiveMap.get(urlAuthorId));
-        await loadInitiatives(urlAuthorId);
-        return;
+      } else if (urlAuthorName) {
+        const match = executiveList.find(e => e.name === urlAuthorName);
+        if (match) lockAuthor(match.id, match.name);
       }
-      if (urlAuthorName) {
-        const match = executiveList.find((e) => e.name === urlAuthorName);
-        if (match) {
-          lockAuthor(match.id, match.name);
-          await loadInitiatives(match.id);
-          return;
+      if (!currentAuthorId) {
+        const sel = $('author');
+        sel.innerHTML = '';
+        const ph = document.createElement('option'); ph.value = ''; ph.textContent = '임원을 선택하세요';
+        sel.appendChild(ph);
+        for (const e of executiveList) {
+          const opt = document.createElement('option'); opt.value = e.id; opt.textContent = e.name;
+          sel.appendChild(opt);
         }
+        sel.disabled = false;
+        const last = localStorage.getItem(LS_AUTHOR_KEY);
+        if (last && executiveMap.has(last)) { sel.value = last; currentAuthorId = last; }
       }
 
-      setSelectOptions($('author'), executiveList, '임원을 선택하세요');
-      $('author').disabled = false;
-      const last = localStorage.getItem(LS_AUTHOR_KEY);
-      if (last && executiveMap.has(last)) {
-        $('author').value = last;
-        currentAuthorId = last;
-        await loadInitiatives(last);
-      }
+      // people picker 초기화 (임원 목록 로드 후)
+      pickers.createOwner = PeoplePicker('createOwnerPicker');
+      pickers.createParticipant = PeoplePicker('createParticipantPicker');
+      pickers.editOwner = PeoplePicker('editOwnerPicker');
+      pickers.editParticipant = PeoplePicker('editParticipantPicker');
+
+      await loadInitiatives(currentAuthorId);
     } catch (err) {
-      setSelectOptions($('author'), [], '임원 로드 실패');
       showStatus('❌ 임원 목록 로드 실패: ' + err.message, 'error');
     }
   }
@@ -681,19 +650,21 @@
   async function loadInitiatives(executiveId) {
     if (!executiveId) {
       initiativeMap = new Map();
-      renderInitiatives([], '먼저 작성자를 선택하세요');
-      return;
+      populateInitiativeSel('initiativeSel', '먼저 작성자를 선택하세요');
+      refreshManageSelects(); return;
     }
-    renderInitiatives([], '불러오는 중...');
+    populateInitiativeSel('initiativeSel', '불러오는 중...');
     try {
       const res = await fetch(WORKER_URL + '/api/initiatives?executive_id=' + encodeURIComponent(executiveId));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       const list = data.initiatives || [];
-      initiativeMap = new Map(list.map((i) => [i.id, i.name]));
-      renderInitiatives(list, '본인 과제가 없습니다');
+      initiativeMap = new Map(list.map(i => [i.id, i.name]));
+      populateInitiativeSel('initiativeSel', list.length ? '전략과제를 선택하세요' : '담당 과제가 없습니다');
+      if (list.length === 1) $('initiativeSel').value = list[0].id;
+      refreshManageSelects();
     } catch (err) {
-      renderInitiatives([], '과제 로드 실패');
+      populateInitiativeSel('initiativeSel', '과제 로드 실패');
       showStatus('❌ 전략과제 목록 로드 실패: ' + err.message, 'error');
     }
   }
@@ -708,24 +679,18 @@
   // ─── 진척사항 입력 ────────────────────────────────────────────────
   let originalDraft = null;
   const btnAI = $('btnAI');
+
   function resetAIButton() {
-    originalDraft = null;
-    btnAI.dataset.mode = '';
-    btnAI.innerHTML = '✨ AI로 다듬기';
+    originalDraft = null; btnAI.dataset.mode = ''; btnAI.innerHTML = '✨ AI로 다듬기';
   }
 
   $('btnReset').addEventListener('click', () => {
-    $('summary').value = '';
-    $('content').value = '';
-    $('date').value = todayStr();
-    $('priority').value = '과제이력 관리';
-    $('files').value = '';
-    $('filesStatus').textContent = '';
-    const checked = $('initiativeList').querySelector('input[name="initiative"]:checked');
-    if (checked) checked.checked = false;
+    $('summary').value = ''; $('content').value = '';
+    $('date').value = todayStr(); $('priority').value = '과제이력 관리';
+    $('files').value = ''; $('filesStatus').textContent = '';
+    $('initiativeSel').value = '';
     resetAIButton(); hideStatus();
   });
-
   $('files').addEventListener('change', () => {
     const fs = $('files').files;
     $('filesStatus').textContent = fs && fs.length ? `${fs.length}개 선택됨` : '';
@@ -733,23 +698,18 @@
 
   btnAI.addEventListener('click', async () => {
     if (btnAI.dataset.mode === 'undo' && originalDraft) {
-      $('summary').value = originalDraft.summary;
-      $('content').value = originalDraft.content;
-      originalDraft = null;
-      btnAI.dataset.mode = '';
-      btnAI.innerHTML = '✨ AI로 다듬기';
+      $('summary').value = originalDraft.summary; $('content').value = originalDraft.content;
+      originalDraft = null; btnAI.dataset.mode = ''; btnAI.innerHTML = '✨ AI로 다듬기';
       hideStatus(); return;
     }
     const summary = $('summary').value.trim();
     const content = $('content').value.trim();
     if (!summary && !content) { showStatus('다듬을 내용을 먼저 입력하세요.', 'error'); return; }
-    hideStatus();
-    btnAI.disabled = true; btnAI.innerHTML = '⏳ 다듬는 중...';
+    hideStatus(); btnAI.disabled = true; btnAI.innerHTML = '⏳ 다듬는 중...';
     try {
       const data = await polishViaGemini(summary, content);
       originalDraft = { summary, content };
-      $('summary').value = data.summary || summary;
-      $('content').value = data.content || content;
+      $('summary').value = data.summary || summary; $('content').value = data.content || content;
       showStatus('✨ AI가 다듬었습니다. 검토 후 저장하거나, "↩ 원문 복원"으로 되돌리세요.', 'success');
       btnAI.dataset.mode = 'undo'; btnAI.innerHTML = '↩ 원문 복원';
     } catch (err) {
@@ -760,16 +720,13 @@
 
   $('updateForm').addEventListener('submit', async (e) => {
     e.preventDefault(); hideStatus();
-    const initiativeId = selectedInitiativeId();
+    const initiativeId = $('initiativeSel').value;
     if (!currentAuthorId) { showStatus('❌ 작성자를 선택하세요.', 'error'); return; }
     if (!initiativeId) { showStatus('❌ 전략과제를 선택하세요.', 'error'); return; }
 
     const btnSave = $('btnSave');
-    btnSave.disabled = true;
-    const origText = btnSave.innerHTML;
-    btnSave.innerHTML = '⏳ 제출 중...';
+    btnSave.disabled = true; const origText = btnSave.innerHTML; btnSave.innerHTML = '⏳ 제출 중...';
     const filesStatus = $('filesStatus');
-
     const fileEls = $('files').files;
     const fileUploads = [];
     if (fileEls && fileEls.length > 0) {
@@ -784,13 +741,11 @@
           fileUploads.push({ id: d.id, name: d.name });
         } catch (err) {
           showStatus('❌ 파일 업로드 실패 (' + f.name + '): ' + err.message, 'error');
-          btnSave.disabled = false; btnSave.innerHTML = origText;
-          filesStatus.textContent = ''; return;
+          btnSave.disabled = false; btnSave.innerHTML = origText; filesStatus.textContent = ''; return;
         }
       }
       filesStatus.textContent = `✅ ${fileEls.length}개 업로드 완료`;
     }
-
     const payload = {
       initiative_id: initiativeId,
       initiative_name: initiativeMap.get(initiativeId) || '',
@@ -812,45 +767,20 @@
       const warnings = (data.warnings || []).join(' / ');
       showStatus('✅ 업데이트가 제출되었습니다.' + (warnings ? ' (' + warnings + ')' : ''), 'success');
       $('summary').value = ''; $('content').value = '';
-      $('priority').value = '과제이력 관리';
-      $('files').value = ''; filesStatus.textContent = '';
+      $('priority').value = '과제이력 관리'; $('files').value = ''; filesStatus.textContent = '';
       resetAIButton();
     } catch (err) {
       showStatus('❌ 제출 실패: ' + err.message, 'error');
-    } finally {
-      btnSave.disabled = false; btnSave.innerHTML = origText;
-    }
+    } finally { btnSave.disabled = false; btnSave.innerHTML = origText; }
   });
-
-  // ─── 수정/삭제 모드 공통: 과제 라디오 리스트 ─────────────────────
-  function renderTaskRadioList(containerId, radioName, onSelect) {
-    const el = $(containerId);
-    el.innerHTML = '';
-    const items = [...initiativeMap.entries()];
-    if (items.length === 0) {
-      const d = document.createElement('div');
-      d.className = 'radio-empty'; d.textContent = '본인 담당 과제가 없습니다';
-      el.appendChild(d); return;
-    }
-    for (const [id, name] of items) {
-      const label = document.createElement('label');
-      label.className = 'radio-card';
-      const inp = document.createElement('input');
-      inp.type = 'radio'; inp.name = radioName; inp.value = id;
-      inp.addEventListener('change', () => onSelect && onSelect(id, name));
-      const span = document.createElement('span');
-      span.className = 'radio-card-text'; span.textContent = name;
-      label.appendChild(inp); label.appendChild(span);
-      el.appendChild(label);
-    }
-  }
 
   // ─── 신규 과제 ────────────────────────────────────────────────────
   $('createForm').addEventListener('submit', async (e) => {
     e.preventDefault(); hideStatus();
     const name = $('newTaskName').value.trim();
-    const ownerIds = getCheckedIds('create-owner');
-    const participantIds = getCheckedIds('create-participant');
+    const description = $('newTaskDesc').value.trim();
+    const ownerIds = pickers.createOwner?.getIds() || [];
+    const participantIds = pickers.createParticipant?.getIds() || [];
     if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
     if (ownerIds.length === 0) { showStatus('❌ 담당임원을 1명 이상 선택하세요.', 'error'); return; }
 
@@ -859,62 +789,63 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ name, description, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       showStatus('✅ 신규 전략과제가 생성되었습니다: ' + name, 'success');
-      $('newTaskName').value = '';
-      document.querySelectorAll('input[name="create-owner"], input[name="create-participant"]').forEach(i => i.checked = false);
-      // 목록 갱신
+      $('newTaskName').value = ''; $('newTaskDesc').value = '';
+      pickers.createOwner?.reset(); pickers.createParticipant?.reset();
       if (data.page_id) initiativeMap.set(data.page_id, name);
-      renderInitiatives([...initiativeMap.entries()].map(([id, nm]) => ({ id, name: nm })), '과제가 없습니다');
+      populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
     } catch (err) {
       showStatus('❌ 생성 실패: ' + err.message, 'error');
     } finally { btn.disabled = false; btn.innerHTML = orig; }
   });
-
   $('btnCreateReset').addEventListener('click', () => {
-    $('newTaskName').value = '';
-    document.querySelectorAll('input[name="create-owner"], input[name="create-participant"]').forEach(i => i.checked = false);
+    $('newTaskName').value = ''; $('newTaskDesc').value = '';
+    pickers.createOwner?.reset(); pickers.createParticipant?.reset();
     hideStatus();
   });
 
   // ─── 과제 수정 ────────────────────────────────────────────────────
   let editingInitiativeId = null;
 
-  async function onEditSelect(id, name) {
-    editingInitiativeId = id;
-    const nameInput = $('editTaskName');
-    const btn = $('btnEdit');
-    nameInput.disabled = true; btn.disabled = true;
-    nameInput.value = '불러오는 중...';
-    $('editOwnerList').innerHTML = '<div class="radio-empty">불러오는 중...</div>';
-    $('editParticipantList').innerHTML = '<div class="radio-empty">불러오는 중...</div>';
+  $('editInitiativeSel').addEventListener('change', async function () {
+    const id = this.value;
+    $('editFields').style.display = 'none';
+    $('editLoading').style.display = 'none';
+    $('btnEdit').disabled = true;
+    editingInitiativeId = null;
+    if (!id) return;
+
+    $('editLoading').style.display = 'block';
     try {
       const r = await fetch(WORKER_URL + '/api/initiative?initiative_id=' + encodeURIComponent(id));
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || '조회 실패');
-      nameInput.value = d.name || name;
-      nameInput.disabled = false;
-      renderCheckboxList('editOwnerList', 'edit-owner', d.owner_ids || []);
-      renderCheckboxList('editParticipantList', 'edit-participant', d.participant_ids || []);
-      btn.disabled = false;
+      editingInitiativeId = id;
+      $('editTaskName').value = d.name || '';
+      $('editTaskDesc').value = d.description || '';
+      pickers.editOwner?.setIds(d.owner_ids || []);
+      pickers.editParticipant?.setIds(d.participant_ids || []);
+      $('editLoading').style.display = 'none';
+      $('editFields').style.display = 'block';
+      $('btnEdit').disabled = false;
     } catch (err) {
+      $('editLoading').style.display = 'none';
       showStatus('❌ 과제 정보 로드 실패: ' + err.message, 'error');
-      nameInput.value = ''; nameInput.disabled = false;
-      renderCheckboxList('editOwnerList', 'edit-owner', []);
-      renderCheckboxList('editParticipantList', 'edit-participant', []);
     }
-  }
+  });
 
   $('editForm').addEventListener('submit', async (e) => {
     e.preventDefault(); hideStatus();
     if (!editingInitiativeId) { showStatus('❌ 과제를 선택하세요.', 'error'); return; }
     const name = $('editTaskName').value.trim();
-    const ownerIds = getCheckedIds('edit-owner');
-    const participantIds = getCheckedIds('edit-participant');
+    const description = $('editTaskDesc').value;
+    const ownerIds = pickers.editOwner?.getIds() || [];
+    const participantIds = pickers.editParticipant?.getIds() || [];
     if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
     if (ownerIds.length === 0) { showStatus('❌ 담당임원을 1명 이상 선택하세요.', 'error'); return; }
 
@@ -923,18 +854,14 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          initiative_id: editingInitiativeId,
-          name, owner_ids: ownerIds, participant_ids: participantIds,
-        }),
+        body: JSON.stringify({ initiative_id: editingInitiativeId, name, description, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       showStatus('✅ 과제가 수정되었습니다: ' + name, 'success');
       initiativeMap.set(editingInitiativeId, name);
-      renderInitiatives([...initiativeMap.entries()].map(([id, nm]) => ({ id, name: nm })), '과제가 없습니다');
-      renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
-      renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
+      populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
+      refreshManageSelects();
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
     } catch (err) {
       showStatus('❌ 수정 실패: ' + err.message, 'error');
@@ -943,27 +870,23 @@
 
   $('btnEditCancel').addEventListener('click', () => {
     editingInitiativeId = null;
-    $('editTaskName').value = ''; $('editTaskName').disabled = true;
+    $('editInitiativeSel').value = '';
+    $('editFields').style.display = 'none';
     $('btnEdit').disabled = true;
-    $('editOwnerList').innerHTML = '<div class="radio-empty">과제를 선택하면 기존 담당임원이 표시됩니다</div>';
-    $('editParticipantList').innerHTML = '<div class="radio-empty">과제를 선택하면 기존 참여인원이 표시됩니다</div>';
-    const checked = document.querySelector('input[name="edit-task"]:checked');
-    if (checked) checked.checked = false;
+    pickers.editOwner?.reset(); pickers.editParticipant?.reset();
     hideStatus();
   });
 
   // ─── 과제 삭제 ────────────────────────────────────────────────────
-  let deletingInitiativeId = null;
-
-  function onDeleteSelect(id) {
-    deletingInitiativeId = id;
-    $('btnDelete').disabled = false;
-  }
+  $('deleteInitiativeSel').addEventListener('change', function () {
+    $('btnDelete').disabled = !this.value;
+  });
 
   $('deleteForm').addEventListener('submit', async (e) => {
     e.preventDefault(); hideStatus();
-    if (!deletingInitiativeId) return;
-    const taskName = initiativeMap.get(deletingInitiativeId) || '(과제)';
+    const id = $('deleteInitiativeSel').value;
+    if (!id) return;
+    const taskName = initiativeMap.get(id) || '(과제)';
     if (!confirm(`정말 삭제(보관처리)할까요?\n\n- ${taskName}\n\n삭제 후에는 되돌리기 어렵습니다.`)) return;
 
     const btn = $('btnDelete');
@@ -971,22 +894,19 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initiative_id: deletingInitiativeId }),
+        body: JSON.stringify({ initiative_id: id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
       showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
-      initiativeMap.delete(deletingInitiativeId);
-      const remaining = [...initiativeMap.entries()].map(([id, name]) => ({ id, name }));
-      renderInitiatives(remaining, '과제가 없습니다');
-      renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
-      renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
-      deletingInitiativeId = null;
-      $('btnDelete').disabled = true;
+      initiativeMap.delete(id);
+      populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
+      refreshManageSelects();
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
     } catch (err) {
       showStatus('❌ 삭제 실패: ' + err.message, 'error');
-    } finally { btn.disabled = false; btn.innerHTML = orig; }
+      btn.disabled = false; btn.innerHTML = orig;
+    }
   });
 
   loadExecutives();

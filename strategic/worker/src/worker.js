@@ -639,6 +639,7 @@ async function handleUpload(request, env) {
 }
 
 // ─── 전략과제 마스터 CRUD ────────────────────────────────────────────────────
+const INIT_PROP_DESC = '세부내용';
 
 async function handleInitiativeGet(initiativeId, env) {
   if (!initiativeId) return { error: 'initiative_id 필요.' };
@@ -648,7 +649,8 @@ async function handleInitiativeGet(initiativeId, env) {
     const name = readTitle(page, INIT_PROP_NAME);
     const ownerIds = (props['담당 임원']?.relation || []).map((r) => r.id);
     const participantIds = (props['참여 임원']?.relation || []).map((r) => r.id);
-    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds };
+    const description = (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join('');
+    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description };
   } catch (e) {
     return { error: `과제 조회 실패: ${e.message}` };
   }
@@ -662,6 +664,7 @@ async function handleInitiativeCreate(request, env) {
   const name = (body.name || '').trim();
   const ownerIds = Array.isArray(body.owner_ids) ? body.owner_ids : [];
   const participantIds = Array.isArray(body.participant_ids) ? body.participant_ids : [];
+  const description = (body.description || '').trim();
 
   if (!name) return { error: '과제명을 입력하세요.' };
   if (ownerIds.length === 0) return { error: '담당임원을 선택하세요.' };
@@ -672,6 +675,9 @@ async function handleInitiativeCreate(request, env) {
   };
   if (participantIds.length > 0) {
     properties['참여 임원'] = { relation: participantIds.map((id) => ({ id })) };
+  }
+  if (description) {
+    properties[INIT_PROP_DESC] = { rich_text: [{ text: { content: description } }] };
   }
 
   try {
@@ -697,6 +703,7 @@ async function handleInitiativeUpdate(request, env) {
   const name = (body.name || '').trim();
   const ownerIds = body.owner_ids != null ? (Array.isArray(body.owner_ids) ? body.owner_ids : []) : null;
   const participantIds = body.participant_ids != null ? (Array.isArray(body.participant_ids) ? body.participant_ids : []) : null;
+  const description = body.description != null ? String(body.description) : null;
 
   if (!initiativeId) return { error: 'initiative_id 필요.' };
   if (ownerIds !== null && ownerIds.length === 0) return { error: '담당임원을 1명 이상 선택하세요.' };
@@ -705,6 +712,9 @@ async function handleInitiativeUpdate(request, env) {
   if (name) properties[INIT_PROP_NAME] = { title: [{ text: { content: name } }] };
   if (ownerIds !== null) properties['담당 임원'] = { relation: ownerIds.map((id) => ({ id })) };
   if (participantIds !== null) properties['참여 임원'] = { relation: participantIds.map((id) => ({ id })) };
+  if (description !== null) {
+    properties[INIT_PROP_DESC] = { rich_text: description ? [{ text: { content: description } }] : [] };
+  }
 
   if (Object.keys(properties).length === 0) return { error: '수정할 항목이 없습니다.' };
 
