@@ -91,6 +91,18 @@ export default {
       if (url.pathname === '/api/save-basic' && request.method === 'POST') {
         return jsonResponse(await handleSaveBasic(request, env), env);
       }
+      if (url.pathname === '/api/initiative' && request.method === 'GET') {
+        return jsonResponse(await handleInitiativeGet(url.searchParams.get('initiative_id') || '', env), env);
+      }
+      if (url.pathname === '/api/initiative' && request.method === 'POST') {
+        return jsonResponse(await handleInitiativeCreate(request, env), env);
+      }
+      if (url.pathname === '/api/initiative' && request.method === 'PATCH') {
+        return jsonResponse(await handleInitiativeUpdate(request, env), env);
+      }
+      if (url.pathname === '/api/initiative' && request.method === 'DELETE') {
+        return jsonResponse(await handleInitiativeDelete(request, env), env);
+      }
       if (url.pathname === '/api/health') {
         return jsonResponse({ ok: true, time: new Date().toISOString() }, env);
       }
@@ -623,6 +635,106 @@ async function handleUpload(request, env) {
     return { ok: true, id: created.id, name: fileName };
   } catch (e) {
     return { error: `업로드 처리 실패: ${e.message}` };
+  }
+}
+
+// ─── 전략과제 마스터 CRUD ────────────────────────────────────────────────────
+
+async function handleInitiativeGet(initiativeId, env) {
+  if (!initiativeId) return { error: 'initiative_id 필요.' };
+  try {
+    const page = await notion(`/pages/${initiativeId}`, {}, env);
+    const props = page.properties || {};
+    const name = readTitle(page, INIT_PROP_NAME);
+    const ownerIds = (props['담당 임원']?.relation || []).map((r) => r.id);
+    const participantIds = (props['참여 임원']?.relation || []).map((r) => r.id);
+    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds };
+  } catch (e) {
+    return { error: `과제 조회 실패: ${e.message}` };
+  }
+}
+
+async function handleInitiativeCreate(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const name = (body.name || '').trim();
+  const ownerIds = Array.isArray(body.owner_ids) ? body.owner_ids : [];
+  const participantIds = Array.isArray(body.participant_ids) ? body.participant_ids : [];
+
+  if (!name) return { error: '과제명을 입력하세요.' };
+  if (ownerIds.length === 0) return { error: '담당임원을 선택하세요.' };
+
+  const properties = {
+    [INIT_PROP_NAME]: { title: [{ text: { content: name } }] },
+    '담당 임원': { relation: ownerIds.map((id) => ({ id })) },
+  };
+  if (participantIds.length > 0) {
+    properties['참여 임원'] = { relation: participantIds.map((id) => ({ id })) };
+  }
+
+  try {
+    const created = await notion('/pages', {
+      method: 'POST',
+      body: JSON.stringify({
+        parent: { type: 'data_source_id', data_source_id: env.INITIATIVES_DATA_SOURCE_ID },
+        properties,
+      }),
+    }, env);
+    return { ok: true, page_id: created.id, url: created.url };
+  } catch (e) {
+    return { error: `생성 실패: ${e.message}` };
+  }
+}
+
+async function handleInitiativeUpdate(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const initiativeId = (body.initiative_id || '').trim();
+  const name = (body.name || '').trim();
+  const ownerIds = body.owner_ids != null ? (Array.isArray(body.owner_ids) ? body.owner_ids : []) : null;
+  const participantIds = body.participant_ids != null ? (Array.isArray(body.participant_ids) ? body.participant_ids : []) : null;
+
+  if (!initiativeId) return { error: 'initiative_id 필요.' };
+  if (ownerIds !== null && ownerIds.length === 0) return { error: '담당임원을 1명 이상 선택하세요.' };
+
+  const properties = {};
+  if (name) properties[INIT_PROP_NAME] = { title: [{ text: { content: name } }] };
+  if (ownerIds !== null) properties['담당 임원'] = { relation: ownerIds.map((id) => ({ id })) };
+  if (participantIds !== null) properties['참여 임원'] = { relation: participantIds.map((id) => ({ id })) };
+
+  if (Object.keys(properties).length === 0) return { error: '수정할 항목이 없습니다.' };
+
+  try {
+    const updated = await notion(`/pages/${initiativeId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ properties }),
+    }, env);
+    return { ok: true, page_id: updated.id };
+  } catch (e) {
+    return { error: `수정 실패: ${e.message}` };
+  }
+}
+
+async function handleInitiativeDelete(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
+
+  const initiativeId = (body.initiative_id || '').trim();
+  if (!initiativeId) return { error: 'initiative_id 필요.' };
+
+  try {
+    await notion(`/pages/${initiativeId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ archived: true }),
+    }, env);
+    return { ok: true };
+  } catch (e) {
+    return { error: `삭제 실패: ${e.message}` };
   }
 }
 
