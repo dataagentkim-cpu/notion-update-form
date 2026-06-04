@@ -331,7 +331,7 @@
     </div>
     <div class="field">
       <div style="padding:12px 14px;background:var(--danger-bg);color:var(--danger);border-radius:9px;font-size:13px">
-        ⚠ 삭제된 과제는 노션에서 보관처리(Archive)됩니다. 신중히 진행하세요.
+        ⚠ 진행 상태가 "삭제"로 변경되어 진행중 목록에서 제외됩니다. 삭제 과제 뷰에서 확인할 수 있습니다.
       </div>
     </div>
     <div class="actions">
@@ -814,7 +814,7 @@
     e.preventDefault(); hideStatus();
     const id = $('deleteInitiativeSel').value; if (!id) return;
     const taskName = initiativeMap.get(id)?.name || '(과제)';
-    if (!confirm(`정말 삭제(보관처리)할까요?\n\n- ${taskName}\n\n삭제 후에는 되돌리기 어렵습니다.`)) return;
+    if (!confirm(`진행 상태를 "삭제"로 변경할까요?\n\n- ${taskName}\n\n진행중 목록에서 제외되고 삭제 과제로 이동됩니다.`)) return;
     const btn = $('btnDelete'); btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 삭제 중...';
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initiative_id: id }) });

@@ -867,7 +867,7 @@ async function handleInitiativeDelete(request, env) {
   try {
     await notion(`/pages/${initiativeId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ archived: true }),
+      body: JSON.stringify({ properties: { '진행 상태': { status: { name: '삭제' } } } }),
     }, env);
     return { ok: true };
   } catch (e) {
