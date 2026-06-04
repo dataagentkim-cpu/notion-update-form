@@ -398,7 +398,7 @@
 
   function showStatus(msg, type) {
     const s = $('status'); s.textContent = msg; s.className = 'status show status-' + type;
-    try { s.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch {}
+    try { s.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
   }
   function hideStatus() { const s = $('status'); s.className = 'status'; s.textContent = ''; }
 
@@ -821,7 +821,8 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       if (data.warning) { showStatus('⚠ ' + data.warning, 'error'); btn.disabled = false; btn.innerHTML = orig; return; }
-      showStatus('✅ 삭제 처리되었습니다: ' + taskName, 'success');
+      btn.innerHTML = orig;
+      showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
       initiativeMap.delete(id); $('deleteInitiativeSel').value = '';
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       refreshManageSelects();
