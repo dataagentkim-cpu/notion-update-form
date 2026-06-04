@@ -820,7 +820,8 @@
       const res = await fetch(WORKER_URL + '/api/initiative', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initiative_id: id }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
-      showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
+      if (data.warning) { showStatus('⚠ ' + data.warning, 'error'); btn.disabled = false; btn.innerHTML = orig; return; }
+      showStatus('✅ 삭제 처리되었습니다: ' + taskName, 'success');
       initiativeMap.delete(id); $('deleteInitiativeSel').value = '';
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       refreshManageSelects();

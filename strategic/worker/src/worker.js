@@ -252,7 +252,7 @@ async function handleInitiatives(executiveId, env) {
         status: props['진행 상태']?.status?.name || '',
       };
     })
-    .filter((i) => i.name);
+    .filter((i) => i.name && i.status !== '삭제'); // API 필터 실패 시 JS 레벨 이중 차단
   return { initiatives };
 }
 
@@ -867,11 +867,24 @@ async function handleInitiativeDelete(request, env) {
   const initiativeId = (body.initiative_id || '').trim();
   if (!initiativeId) return { error: 'initiative_id 필요.' };
 
+  const patchBody = JSON.stringify({ properties: { '진행 상태': { status: { name: '삭제' } } } });
+  const tryPatch = () => notion(`/pages/${initiativeId}`, { method: 'PATCH', body: patchBody }, env);
+
   try {
-    await notion(`/pages/${initiativeId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ properties: { '진행 상태': { status: { name: '삭제' } } } }),
-    }, env);
+    await tryPatch();
+    // 노션 자동화 race condition 대비 — 1.5초 뒤 상태 검증 후 필요 시 재시도
+    await new Promise((r) => setTimeout(r, 1500));
+    const p1 = await notion(`/pages/${initiativeId}`, {}, env);
+    const cur = p1.properties?.['진행 상태']?.status?.name;
+    if (cur !== '삭제') {
+      await tryPatch();
+      await new Promise((r) => setTimeout(r, 800));
+      const p2 = await notion(`/pages/${initiativeId}`, {}, env);
+      const cur2 = p2.properties?.['진행 상태']?.status?.name;
+      if (cur2 !== '삭제') {
+        return { ok: false, warning: `상태가 자동화에 의해 복원됨 (현재: ${cur2}). 노션 자동화 규칙 확인 필요.` };
+      }
+    }
     return { ok: true };
   } catch (e) {
     return { error: `삭제 실패: ${e.message}` };
