@@ -337,20 +337,27 @@
   </form>
 
   <!-- ── 과제 삭제 ── -->
-  <form id="deleteForm" class="mode-panel" data-panel="delete">
+  <div id="deletePanel" class="mode-panel" data-panel="delete">
     <div class="field">
       <label class="field-label" for="deleteInitiativeSel">삭제할 과제 선택 <span class="req">*</span></label>
       <select id="deleteInitiativeSel" class="select"><option value="">과제를 선택하세요</option></select>
     </div>
-    <div class="field">
-      <div style="padding:12px 14px;background:var(--danger-bg);color:var(--danger);border-radius:9px;font-size:13px">
-        ⚠ 진행 상태가 "삭제"로 변경되어 진행중 목록에서 제외됩니다. 삭제 과제 뷰에서 확인할 수 있습니다.
+    <!-- 1단계: 삭제 버튼 -->
+    <div id="deleteStep1" class="actions" style="display:none">
+      <button type="button" id="btnDelete" class="btn btn-danger">🗑 과제 삭제</button>
+    </div>
+    <!-- 2단계: 인라인 확인 -->
+    <div id="deleteStep2" style="display:none">
+      <div style="padding:14px 16px;background:var(--danger-bg);border:1.5px solid var(--danger);border-radius:10px;margin-top:4px">
+        <p style="font-size:14px;color:var(--danger);font-weight:600;margin-bottom:12px">⚠ 정말 삭제하시겠습니까?</p>
+        <p id="deleteConfirmName" style="font-size:14px;color:var(--text-primary);margin-bottom:14px;padding:8px 10px;background:var(--card-bg);border-radius:7px"></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button type="button" id="btnDeleteConfirm" class="btn btn-danger">🗑 삭제 확인</button>
+          <button type="button" id="btnDeleteCancel" class="btn">취소</button>
+        </div>
       </div>
     </div>
-    <div class="actions">
-      <button type="submit" id="btnDelete" class="btn btn-danger" disabled>🗑 과제 삭제</button>
-    </div>
-  </form>
+  </div>
 
   </div>
 </div>
@@ -476,7 +483,7 @@
   function refreshManageSelects() {
     populateInitiativeSel('editInitiativeSel', '과제를 선택하세요');
     populateInitiativeSel('deleteInitiativeSel', '과제를 선택하세요');
-    $('btnDelete').disabled = true;
+    resetDeletePanel();
     $('btnEdit').disabled = true;
     $('editFields').style.display = 'none';
     $('editLoading').style.display = 'none';
@@ -830,27 +837,60 @@
   });
 
   // ─── 과제 삭제 ────────────────────────────────────────────────────
-  $('deleteInitiativeSel').addEventListener('change', function () { $('btnDelete').disabled = !this.value; });
+  function resetDeletePanel() {
+    $('deleteStep1').style.display = 'none';
+    $('deleteStep2').style.display = 'none';
+    $('deleteConfirmName').textContent = '';
+  }
 
-  $('deleteForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); hideStatus();
+  $('deleteInitiativeSel').addEventListener('change', function () {
+    hideStatus();
+    resetDeletePanel();
+    if (this.value) $('deleteStep1').style.display = '';
+  });
+
+  // 1단계: 삭제 버튼 → 확인 UI 표시
+  $('btnDelete').addEventListener('click', () => {
     const id = $('deleteInitiativeSel').value; if (!id) return;
     const taskName = initiativeMap.get(id)?.name || '(과제)';
-    if (!confirm(`진행 상태를 "삭제"로 변경할까요?\n\n- ${taskName}\n\n진행중 목록에서 제외되고 삭제 과제로 이동됩니다.`)) return;
-    const btn = $('btnDelete'); btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 삭제 중...';
+    $('deleteConfirmName').textContent = taskName;
+    $('deleteStep1').style.display = 'none';
+    $('deleteStep2').style.display = 'block';
+  });
+
+  // 취소
+  $('btnDeleteCancel').addEventListener('click', () => {
+    $('deleteStep2').style.display = 'none';
+    $('deleteStep1').style.display = '';
+    hideStatus();
+  });
+
+  // 2단계: 실제 삭제 실행
+  $('btnDeleteConfirm').addEventListener('click', async () => {
+    const id = $('deleteInitiativeSel').value; if (!id) return;
+    const taskName = initiativeMap.get(id)?.name || '(과제)';
+    const btn = $('btnDeleteConfirm');
+    btn.disabled = true; btn.innerHTML = '⏳ 삭제 중...';
+    $('btnDeleteCancel').disabled = true;
+    hideStatus();
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initiative_id: id }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
-      if (data.warning) { showStatus('⚠ ' + data.warning, 'error'); btn.disabled = false; btn.innerHTML = orig; return; }
-      btn.innerHTML = orig;
+      if (data.warning) { showStatus('⚠ ' + data.warning, 'error'); btn.disabled = false; btn.innerHTML = '🗑 삭제 확인'; $('btnDeleteCancel').disabled = false; return; }
       showToast('🗑 과제가 삭제되었습니다');
       showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
-      initiativeMap.delete(id); $('deleteInitiativeSel').value = '';
+      initiativeMap.delete(id);
+      $('deleteInitiativeSel').value = '';
+      resetDeletePanel();
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       refreshManageSelects();
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
-    } catch (err) { showStatus('❌ 삭제 실패: ' + err.message, 'error'); btn.disabled = false; btn.innerHTML = orig; }
+    } catch (err) {
+      showStatus('❌ 삭제 실패: ' + err.message, 'error');
+      btn.disabled = false; btn.innerHTML = '🗑 삭제 확인';
+      $('btnDeleteCancel').disabled = false;
+    }
   });
 
   // 병렬 초기화
