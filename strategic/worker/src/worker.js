@@ -238,7 +238,7 @@ async function handleInitiatives(executiveId, env) {
         description: (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join(''),
         daebunryu_id: (props['전략과제_대분류']?.relation || [])[0]?.id || '',
         junbunryu_id: (props['전략과제_중분류']?.relation || [])[0]?.id || '',
-        status: props['진행 상태']?.select?.name || '',
+        status: props['진행 상태']?.status?.name || '',
       };
     })
     .filter((i) => i.name);
@@ -692,7 +692,7 @@ async function handleInitiativeGet(initiativeId, env) {
     const description = (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join('');
     const daebunryuId = (props['전략과제_대분류']?.relation || [])[0]?.id || '';
     const junbunryuId = (props['전략과제_중분류']?.relation || [])[0]?.id || '';
-    const status = props['진행 상태']?.select?.name || '';
+    const status = props['진행 상태']?.status?.name || '';
     return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, status };
   } catch (e) {
     return { error: `과제 조회 실패: ${e.message}` };
@@ -719,7 +719,7 @@ async function handleInitiativeCreate(request, env) {
     [INIT_PROP_NAME]: { title: [{ text: { content: name } }] },
     '담당 임원': { relation: ownerIds.map((id) => ({ id })) },
     '전략과제_대분류': { relation: [{ id: daebunryuId }] },
-    '진행 상태': { select: { name: '진행중' } },
+    '진행 상태': { status: { name: '진행중' } },
   };
   if (participantIds.length > 0) {
     properties['참여 임원'] = { relation: participantIds.map((id) => ({ id })) };
@@ -772,7 +772,7 @@ async function handleInitiativeUpdate(request, env) {
   }
   if (daebunryuId !== null) properties['전략과제_대분류'] = { relation: daebunryuId ? [{ id: daebunryuId }] : [] };
   if (junbunryuId !== null) properties['전략과제_중분류'] = { relation: junbunryuId ? [{ id: junbunryuId }] : [] };
-  if (status && VALID_STATUSES.includes(status)) properties['진행 상태'] = { select: { name: status } };
+  if (status && VALID_STATUSES.includes(status)) properties['진행 상태'] = { status: { name: status } };
 
   if (Object.keys(properties).length === 0) return { error: '수정할 항목이 없습니다.' };
 
