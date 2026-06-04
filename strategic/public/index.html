@@ -198,8 +198,8 @@
       <div class="field">
         <label class="field-label" for="priority">중요도</label>
         <select id="priority" class="select">
-          <option value="대시보드 게시">대시보드 게시</option>
-          <option value="과제이력 관리" selected>과제이력 관리</option>
+          <option value="대시보드 게시" selected>대시보드 게시</option>
+          <option value="과제이력 관리">과제이력 관리</option>
         </select>
       </div>
       <div class="field">
@@ -584,7 +584,7 @@
 
   $('btnReset').addEventListener('click', () => {
     $('summary').value = ''; $('content').value = ''; $('date').value = todayStr();
-    $('priority').value = '과제이력 관리'; $('files').value = ''; $('filesStatus').textContent = '';
+    $('priority').value = '대시보드 게시'; $('files').value = ''; $('filesStatus').textContent = '';
     $('initiativeSel').value = ''; resetAIButton(); hideStatus();
   });
   $('files').addEventListener('change', () => {
@@ -634,7 +634,7 @@
       initiative_id: initiativeId, initiative_name: initiativeMap.get(initiativeId)?.name || '',
       author_id: currentAuthorId, author_name: executiveMap.get(currentAuthorId) || '',
       summary: $('summary').value.trim(), content: $('content').value.trim(),
-      date: $('date').value, priority: $('priority').value || '과제이력 관리', file_uploads: fileUploads,
+      date: $('date').value, priority: $('priority').value || '대시보드 게시', file_uploads: fileUploads,
     };
     try {
       const res = await fetch(WORKER_URL + '/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -642,7 +642,7 @@
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       const warnings = (data.warnings || []).join(' / ');
       showStatus('✅ 업데이트가 제출되었습니다.' + (warnings ? ' (' + warnings + ')' : ''), 'success');
-      $('summary').value = ''; $('content').value = ''; $('priority').value = '과제이력 관리'; $('files').value = ''; filesStatus.textContent = ''; resetAIButton();
+      $('summary').value = ''; $('content').value = ''; $('priority').value = '대시보드 게시'; $('files').value = ''; filesStatus.textContent = ''; resetAIButton();
     } catch (err) { showStatus('❌ 제출 실패: ' + err.message, 'error'); }
     finally { btnSave.disabled = false; btnSave.innerHTML = origText; }
   });
