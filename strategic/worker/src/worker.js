@@ -867,7 +867,16 @@ async function handleInitiativeDelete(request, env) {
   const initiativeId = (body.initiative_id || '').trim();
   if (!initiativeId) return { error: 'initiative_id 필요.' };
 
-  const patchBody = JSON.stringify({ properties: { '진행 상태': { status: { name: '삭제' } } } });
+  // 상태를 '삭제'로 변경하고 담당/참여 임원 relation을 비워
+  // → 임원 페이지의 담당과제·참여과제 속성 목록에서 제거됨
+  // → 전략과제 DB에는 '삭제' 상태로 남아 삭제 과제 뷰에서 확인 가능
+  const patchBody = JSON.stringify({
+    properties: {
+      '진행 상태': { status: { name: '삭제' } },
+      '담당 임원': { relation: [] },
+      '참여 임원': { relation: [] },
+    },
+  });
   const tryPatch = () => notion(`/pages/${initiativeId}`, { method: 'PATCH', body: patchBody }, env);
 
   try {
