@@ -133,12 +133,25 @@
   .status-error   { background: var(--danger-bg);  color: var(--danger); }
   .status-info    { background: var(--accent-bg);  color: var(--accent); }
 
+  /* 토스트 알림 */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    white-space: nowrap; pointer-events: none; z-index: 9999;
+    opacity: 0; transition: opacity 0.25s, transform 0.25s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast-success { background: #059669; color: #fff; }
+  .toast-error   { background: #dc2626; color: #fff; }
+
   .section-divider { height: 1px; background: var(--card-border); margin: 16px 0; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
+<div id="toast" class="toast"></div>
 <div class="container">
   <div class="card">
   <header class="header">
@@ -395,6 +408,15 @@
   let initiativeMap = new Map(); // id → { name, owner_ids, participant_ids, description, daebunryu_id, junbunryu_id, status }
   let categoryData = { 대분류: [], 중분류: [] };
   let currentAuthorId = '';
+
+  let _toastTimer = null;
+  function showToast(msg, type = 'success', duration = 3000) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast toast-' + type + ' show';
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { t.classList.remove('show'); }, duration);
+  }
 
   function showStatus(msg, type) {
     const s = $('status'); s.textContent = msg; s.className = 'status show status-' + type;
@@ -822,6 +844,7 @@
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       if (data.warning) { showStatus('⚠ ' + data.warning, 'error'); btn.disabled = false; btn.innerHTML = orig; return; }
       btn.innerHTML = orig;
+      showToast('🗑 과제가 삭제되었습니다');
       showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
       initiativeMap.delete(id); $('deleteInitiativeSel').value = '';
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
