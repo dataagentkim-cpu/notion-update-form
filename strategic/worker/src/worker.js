@@ -94,6 +94,12 @@ export default {
       if (url.pathname === '/api/categories' && request.method === 'GET') {
         return jsonResponse(await handleCategories(env), env);
       }
+      if (url.pathname === '/api/departments' && request.method === 'GET') {
+        return jsonResponse(await handleDepartments(env), env);
+      }
+      if (url.pathname === '/api/next-number' && request.method === 'GET') {
+        return jsonResponse(await handleNextNumber(url.searchParams.get('junbunryu_id') || '', env), env);
+      }
       if (url.pathname === '/api/initiative' && request.method === 'GET') {
         return jsonResponse(await handleInitiativeGet(url.searchParams.get('initiative_id') || '', env), env);
       }
@@ -238,6 +244,8 @@ async function handleInitiatives(executiveId, env) {
         description: (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join(''),
         daebunryu_id: (props['전략과제_대분류']?.relation || [])[0]?.id || '',
         junbunryu_id: (props['전략과제_중분류']?.relation || [])[0]?.id || '',
+        department_id: (props['부문']?.relation || [])[0]?.id || '',
+        task_number: (props['과제번호']?.rich_text || []).map((s) => s.plain_text || '').join(''),
         status: props['진행 상태']?.status?.name || '',
       };
     })
@@ -653,6 +661,52 @@ async function handleUpload(request, env) {
   }
 }
 
+// ─── 부문 목록 ───────────────────────────────────────────────────────────────
+async function handleDepartments(env) {
+  const pages = await queryAll(env.DEPARTMENTS_DATA_SOURCE_ID, {
+    sorts: [{ property: '부문 명', direction: 'ascending' }],
+  }, env);
+  const departments = pages
+    .map((p) => ({
+      id: p.id,
+      name: (p.properties['부문 명']?.title || []).map((s) => s.plain_text || '').join(''),
+    }))
+    .filter((d) => d.name);
+  return { departments };
+}
+
+// ─── 과제번호 자동 채번 ───────────────────────────────────────────────────────
+async function handleNextNumber(junbunryuId, env) {
+  if (!junbunryuId) return { error: 'junbunryu_id 필요.' };
+  try {
+    // 중분류 이름에서 번호 prefix 추출 (예: "1.1 SWF 파트너십" → "1.1")
+    const jungPage = await notion(`/pages/${junbunryuId}`, {}, env);
+    const titleProp = Object.values(jungPage.properties || {}).find((p) => p.type === 'title');
+    const jungName = (titleProp?.title || []).map((s) => s.plain_text || '').join('');
+    const prefixMatch = jungName.match(/^([\d.]+)/);
+    if (!prefixMatch) return { error: `중분류 번호를 파싱할 수 없습니다: "${jungName}"` };
+    const prefix = prefixMatch[1].replace(/\.$/, ''); // trailing dot 제거
+
+    // 해당 중분류의 모든 전략과제 조회
+    const pages = await queryAll(env.INITIATIVES_DATA_SOURCE_ID, {
+      filter: { property: '전략과제_중분류', relation: { contains: junbunryuId } },
+    }, env);
+
+    // 과제번호에서 seq 추출 → max 찾기
+    let maxSeq = 0;
+    for (const p of pages) {
+      const num = (p.properties['과제번호']?.rich_text || []).map((s) => s.plain_text || '').join('');
+      if (num.startsWith(prefix + '.')) {
+        const seq = parseInt(num.slice(prefix.length + 1), 10);
+        if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+      }
+    }
+    return { next_number: `${prefix}.${String(maxSeq + 1).padStart(2, '0')}` };
+  } catch (e) {
+    return { error: `번호 조회 실패: ${e.message}` };
+  }
+}
+
 // ─── 전략과제 대분류/중분류 ──────────────────────────────────────────────────
 async function handleCategories(env) {
   const [daePages, jungPages] = await Promise.all([
@@ -692,8 +746,10 @@ async function handleInitiativeGet(initiativeId, env) {
     const description = (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join('');
     const daebunryuId = (props['전략과제_대분류']?.relation || [])[0]?.id || '';
     const junbunryuId = (props['전략과제_중분류']?.relation || [])[0]?.id || '';
+    const departmentId = (props['부문']?.relation || [])[0]?.id || '';
+    const taskNumber = (props['과제번호']?.rich_text || []).map((s) => s.plain_text || '').join('');
     const status = props['진행 상태']?.status?.name || '';
-    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, status };
+    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, status };
   } catch (e) {
     return { error: `과제 조회 실패: ${e.message}` };
   }
@@ -710,6 +766,8 @@ async function handleInitiativeCreate(request, env) {
   const description = (body.description || '').trim();
   const daebunryuId = (body.daebunryu_id || '').trim();
   const junbunryuId = (body.junbunryu_id || '').trim();
+  const departmentId = (body.department_id || '').trim();
+  const taskNumber = (body.task_number || '').trim();
 
   if (!name) return { error: '과제명을 입력하세요.' };
   if (ownerIds.length === 0) return { error: '담당임원을 선택하세요.' };
@@ -726,6 +784,12 @@ async function handleInitiativeCreate(request, env) {
   }
   if (junbunryuId) {
     properties['전략과제_중분류'] = { relation: [{ id: junbunryuId }] };
+  }
+  if (departmentId) {
+    properties['부문'] = { relation: [{ id: departmentId }] };
+  }
+  if (taskNumber) {
+    properties['과제번호'] = { rich_text: [{ text: { content: taskNumber } }] };
   }
   if (description) {
     properties[INIT_PROP_DESC] = { rich_text: [{ text: { content: description } }] };
@@ -770,8 +834,13 @@ async function handleInitiativeUpdate(request, env) {
   if (description !== null) {
     properties[INIT_PROP_DESC] = { rich_text: description ? [{ text: { content: description } }] : [] };
   }
+  const departmentId = body.department_id != null ? (body.department_id || '').trim() : null;
+  const taskNumber = body.task_number != null ? String(body.task_number) : null;
+
   if (daebunryuId !== null) properties['전략과제_대분류'] = { relation: daebunryuId ? [{ id: daebunryuId }] : [] };
   if (junbunryuId !== null) properties['전략과제_중분류'] = { relation: junbunryuId ? [{ id: junbunryuId }] : [] };
+  if (departmentId !== null) properties['부문'] = { relation: departmentId ? [{ id: departmentId }] : [] };
+  if (taskNumber !== null) properties['과제번호'] = { rich_text: taskNumber ? [{ text: { content: taskNumber } }] : [] };
   if (status && VALID_STATUSES.includes(status)) properties['진행 상태'] = { status: { name: status } };
 
   if (Object.keys(properties).length === 0) return { error: '수정할 항목이 없습니다.' };

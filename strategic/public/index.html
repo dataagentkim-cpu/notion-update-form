@@ -236,6 +236,16 @@
         <select id="newJunbunryu" class="select" disabled><option value="">대분류를 먼저 선택하세요</option></select>
       </div>
     </div>
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="newDepartment">부문</label>
+        <select id="newDepartment" class="select"><option value="">불러오는 중...</option></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="newTaskNumber">과제번호 <span class="field-hint">중분류 선택 시 자동 채번</span></label>
+        <input id="newTaskNumber" class="input" type="text" placeholder="예) 1.1.03" autocomplete="off"/>
+      </div>
+    </div>
     <div class="section-divider"></div>
     <div class="field">
       <label class="field-label">담당임원 <span class="req">*</span> <span class="field-hint">1명 이상</span></label>
@@ -284,6 +294,16 @@
         <div class="field">
           <label class="field-label" for="editJunbunryu">중분류</label>
           <select id="editJunbunryu" class="select"><option value="">선택</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label" for="editDepartment">부문</label>
+          <select id="editDepartment" class="select"><option value="">선택</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="editTaskNumber">과제번호</label>
+          <input id="editTaskNumber" class="input" type="text" placeholder="예) 1.1.03"/>
         </div>
       </div>
       <div class="section-divider"></div>
@@ -541,6 +561,29 @@
     }
   }
 
+  async function loadDepartments() {
+    try {
+      const res = await fetch(WORKER_URL + '/api/departments');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '서버 오류');
+      const depts = data.departments || [];
+      // create form
+      const newSel = $('newDepartment');
+      newSel.innerHTML = '<option value="">선택</option>';
+      for (const d of depts) {
+        const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; newSel.appendChild(opt);
+      }
+      // edit form
+      const editSel = $('editDepartment');
+      editSel.innerHTML = '<option value="">선택</option>';
+      for (const d of depts) {
+        const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; editSel.appendChild(opt);
+      }
+    } catch (err) {
+      $('newDepartment').innerHTML = '<option value="">부문 로드 실패</option>';
+    }
+  }
+
   async function loadInitiatives(executiveId) {
     if (!executiveId) {
       initiativeMap = new Map();
@@ -572,9 +615,22 @@
   // 대분류 → 중분류 연동
   $('newDaebunryu').addEventListener('change', function () {
     populateJunbunryuSel('newJunbunryu', this.value, '');
+    $('newTaskNumber').value = '';
   });
   $('editDaebunryu').addEventListener('change', function () {
     populateJunbunryuSel('editJunbunryu', this.value, '');
+  });
+
+  // 중분류 → 과제번호 자동 채번
+  $('newJunbunryu').addEventListener('change', async function () {
+    const id = this.value;
+    if (!id) { $('newTaskNumber').value = ''; return; }
+    $('newTaskNumber').value = '채번 중...';
+    try {
+      const res = await fetch(WORKER_URL + '/api/next-number?junbunryu_id=' + encodeURIComponent(id));
+      const data = await res.json();
+      $('newTaskNumber').value = data.next_number || '';
+    } catch { $('newTaskNumber').value = ''; }
   });
 
   // ─── 진척사항 입력 ────────────────────────────────────────────────
@@ -654,6 +710,8 @@
     const description = $('newTaskDesc').value.trim();
     const daebunryuId = $('newDaebunryu').value;
     const junbunryuId = $('newJunbunryu').value;
+    const departmentId = $('newDepartment').value;
+    const taskNumber = $('newTaskNumber').value.trim();
     const ownerIds = pickers.createOwner?.getIds() || [];
     const participantIds = pickers.createParticipant?.getIds() || [];
     if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
@@ -664,21 +722,21 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ name, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       showStatus('✅ 신규 전략과제가 생성되었습니다: ' + name, 'success');
-      $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = '';
+      $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = ''; $('newDepartment').value = ''; $('newTaskNumber').value = '';
       pickers.createOwner?.reset(); pickers.createParticipant?.reset();
-      if (data.page_id) initiativeMap.set(data.page_id, { name, description, owner_ids: ownerIds, participant_ids: participantIds, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, status: '진행중' });
+      if (data.page_id) initiativeMap.set(data.page_id, { name, description, owner_ids: ownerIds, participant_ids: participantIds, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, status: '진행중' });
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
     } catch (err) { showStatus('❌ 생성 실패: ' + err.message, 'error'); }
     finally { btn.disabled = false; btn.innerHTML = orig; }
   });
   $('btnCreateReset').addEventListener('click', () => {
-    $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = '';
+    $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = ''; $('newDepartment').value = ''; $('newTaskNumber').value = '';
     pickers.createOwner?.reset(); pickers.createParticipant?.reset(); hideStatus();
   });
 
@@ -699,6 +757,8 @@
       $('editStatus').value = cached.status || '진행중';
       populateDaebunryuSel('editDaebunryu', cached.daebunryu_id || '');
       populateJunbunryuSel('editJunbunryu', cached.daebunryu_id || '', cached.junbunryu_id || '');
+      $('editDepartment').value = cached.department_id || '';
+      $('editTaskNumber').value = cached.task_number || '';
       pickers.editOwner?.setIds(cached.owner_ids || []);
       pickers.editParticipant?.setIds(cached.participant_ids || []);
       $('editFields').style.display = 'block';
@@ -716,6 +776,8 @@
     const status = $('editStatus').value;
     const daebunryuId = $('editDaebunryu').value;
     const junbunryuId = $('editJunbunryu').value;
+    const departmentId = $('editDepartment').value;
+    const taskNumber = $('editTaskNumber').value.trim();
     const ownerIds = pickers.editOwner?.getIds() || [];
     const participantIds = pickers.editParticipant?.getIds() || [];
     if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
@@ -725,13 +787,13 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initiative_id: editingInitiativeId, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ initiative_id: editingInitiativeId, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       showStatus('✅ 과제가 수정되었습니다: ' + name, 'success');
       const prev = initiativeMap.get(editingInitiativeId) || {};
-      initiativeMap.set(editingInitiativeId, { ...prev, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, owner_ids: ownerIds, participant_ids: participantIds });
+      initiativeMap.set(editingInitiativeId, { ...prev, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds });
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       refreshManageSelects();
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
@@ -767,7 +829,7 @@
   });
 
   // 병렬 초기화
-  Promise.all([loadExecutives(), loadCategories()]);
+  Promise.all([loadExecutives(), loadCategories(), loadDepartments()]);
 </script>
 </body>
 </html>
