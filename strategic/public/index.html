@@ -395,7 +395,7 @@
   const urlAuthorName = (urlParams.get('author') || '').trim();
   const urlMode = (urlParams.get('mode') || '').trim();
 
-  if (urlMode === 'full') $('modeTabs').style.display = '';
+  $('modeTabs').style.display = '';
 
   function setMode(mode) {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
