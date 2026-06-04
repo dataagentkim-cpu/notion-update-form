@@ -373,9 +373,22 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
+
+  /* 토스트 알림 */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    white-space: nowrap; pointer-events: none; z-index: 9999;
+    opacity: 0; transition: opacity 0.25s, transform 0.25s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast-success { background: #059669; color: #fff; }
+  .toast-error   { background: #dc2626; color: #fff; }
 </style>
 </head>
 <body>
+<div id="toast" class="toast"></div>
 <div class="container">
   <div class="card">
   <header class="header">
@@ -489,23 +502,31 @@
   </form>
 
   <!-- 과제 삭제 모드 -->
-  <form id="deleteForm" class="mode-panel" data-panel="delete">
+  <div id="deletePanel" class="mode-panel" data-panel="delete">
     <div class="field">
       <label class="field-label">삭제할 고유과제 선택 <span class="req">*</span></label>
       <div id="deleteTaskList" class="radio-list">
         <div class="radio-empty">로딩 중...</div>
       </div>
     </div>
-    <div class="field">
-      <div style="padding:12px 14px;background:var(--danger-bg);color:var(--danger);border-radius:9px;font-size:13px">
-        ⚠ 삭제 후에는 되돌리기 어려우니 신중히 진행해주세요.
+    <!-- 1단계: 삭제 버튼 -->
+    <div id="deleteStep1" class="actions" style="display:none">
+      <button type="button" id="btnDelete" class="btn"
+        style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);color:#fff;border:none;box-shadow:0 4px 14px rgba(220,38,38,0.35)">🗑 과제 삭제</button>
+    </div>
+    <!-- 2단계: 인라인 확인 -->
+    <div id="deleteStep2" style="display:none">
+      <div style="padding:14px 16px;background:var(--danger-bg);border:1.5px solid var(--danger);border-radius:10px;margin-top:4px">
+        <p style="font-size:14px;color:var(--danger);font-weight:600;margin-bottom:12px">⚠ 정말 삭제하시겠습니까?</p>
+        <p id="deleteConfirmName" style="font-size:14px;color:var(--text-primary);margin-bottom:14px;padding:8px 10px;background:var(--card-bg);border-radius:7px"></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button type="button" id="btnDeleteConfirm" class="btn"
+            style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);color:#fff;border:none">🗑 삭제 확인</button>
+          <button type="button" id="btnDeleteCancel" class="btn">취소</button>
+        </div>
       </div>
     </div>
-    <div class="actions">
-      <button type="submit" id="btnDelete" class="btn btn-primary" disabled
-        style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);box-shadow:0 4px 14px rgba(220,38,38,0.35)">🗑 과제 삭제</button>
-    </div>
-  </form>
+  </div>
   </div>
 </div>
 
@@ -994,18 +1015,51 @@
 
   // ─── 삭제 모드 ───
   let deletingTaskId = null;
-  function onDeleteSelect(id) {
-    deletingTaskId = id;
-    document.getElementById('btnDelete').disabled = false;
+  let _toastTimer = null;
+  function showToast(msg, type = 'success', duration = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast toast-' + type + ' show';
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), duration);
   }
-  document.getElementById('deleteForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
+
+  function resetDeletePanel() {
+    document.getElementById('deleteStep1').style.display = 'none';
+    document.getElementById('deleteStep2').style.display = 'none';
+    document.getElementById('deleteConfirmName').textContent = '';
+    deletingTaskId = null;
+  }
+
+  function onDeleteSelect(id, taskName) {
+    deletingTaskId = id;
+    document.getElementById('deleteStep2').style.display = 'none';
+    document.getElementById('deleteStep1').style.display = '';
+  }
+
+  // 1단계: 삭제 버튼 → 확인 패널 표시
+  document.getElementById('btnDelete').addEventListener('click', () => {
     if (!deletingTaskId) return;
     const taskName = initiativeMap.get(deletingTaskId) || '(과제)';
-    if (!confirm(`정말 삭제할까요?\n\n- ${taskName}\n\n삭제 후에는 되돌리기 어렵습니다.`)) return;
-    const btn = document.getElementById('btnDelete');
-    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 삭제 중...';
+    document.getElementById('deleteConfirmName').textContent = taskName;
+    document.getElementById('deleteStep1').style.display = 'none';
+    document.getElementById('deleteStep2').style.display = 'block';
+  });
+
+  // 취소
+  document.getElementById('btnDeleteCancel').addEventListener('click', () => {
+    document.getElementById('deleteStep2').style.display = 'none';
+    document.getElementById('deleteStep1').style.display = '';
+    hideStatus();
+  });
+
+  // 2단계: 실제 삭제 실행
+  document.getElementById('btnDeleteConfirm').addEventListener('click', async () => {
+    if (!deletingTaskId) return;
+    const taskName = initiativeMap.get(deletingTaskId) || '(과제)';
+    const btn = document.getElementById('btnDeleteConfirm');
+    const cancelBtn = document.getElementById('btnDeleteCancel');
+    btn.disabled = true; btn.innerHTML = '⏳ 삭제 중...'; cancelBtn.disabled = true;
+    hideStatus();
     try {
       const res = await fetch(WORKER_URL + '/api/basic-task', {
         method: 'DELETE',
@@ -1014,21 +1068,18 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      showToast('🗑 과제가 삭제되었습니다');
       showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
-      // 노션 인덱싱 지연을 우회하기 위해 클라이언트 측에서 즉시 제거
       initiativeMap.delete(deletingTaskId);
       const remaining = [...initiativeMap.entries()].map(([id, name]) => ({ id, name }));
       renderInitiatives(remaining, '본인 담당 과제가 없습니다');
-      renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
       renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
-      deletingTaskId = null;
-      document.getElementById('btnDelete').disabled = true;
-      // 백그라운드 재동기화 (지연 후)
+      resetDeletePanel();
+      renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
       setTimeout(() => loadBasicTasks(), 1500);
     } catch (err) {
       showStatus('❌ 삭제 실패: ' + err.message, 'error');
-    } finally {
-      btn.disabled = false; btn.innerHTML = orig;
+      btn.disabled = false; btn.innerHTML = '🗑 삭제 확인'; cancelBtn.disabled = false;
     }
   });
 
@@ -1037,7 +1088,7 @@
     t.addEventListener('click', () => {
       const m = t.dataset.mode;
       if (m === 'edit') renderTaskRadioList('editTaskList', 'edit-task', onEditSelect);
-      else if (m === 'delete') renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect);
+      else if (m === 'delete') { resetDeletePanel(); renderTaskRadioList('deleteTaskList', 'delete-task', onDeleteSelect); }
     });
   });
 
