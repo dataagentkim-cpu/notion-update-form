@@ -91,6 +91,9 @@ export default {
       if (url.pathname === '/api/save-basic' && request.method === 'POST') {
         return jsonResponse(await handleSaveBasic(request, env), env);
       }
+      if (url.pathname === '/api/categories' && request.method === 'GET') {
+        return jsonResponse(await handleCategories(env), env);
+      }
       if (url.pathname === '/api/initiative' && request.method === 'GET') {
         return jsonResponse(await handleInitiativeGet(url.searchParams.get('initiative_id') || '', env), env);
       }
@@ -225,7 +228,19 @@ async function handleInitiatives(executiveId, env) {
   }
 
   const initiatives = pages
-    .map((p) => ({ id: p.id, name: readTitle(p, INIT_PROP_NAME) }))
+    .map((p) => {
+      const props = p.properties || {};
+      return {
+        id: p.id,
+        name: readTitle(p, INIT_PROP_NAME),
+        owner_ids: (props['담당 임원']?.relation || []).map((r) => r.id),
+        participant_ids: (props['참여 임원']?.relation || []).map((r) => r.id),
+        description: (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join(''),
+        daebunryu_id: (props['전략과제_대분류']?.relation || [])[0]?.id || '',
+        junbunryu_id: (props['전략과제_중분류']?.relation || [])[0]?.id || '',
+        status: props['진행 상태']?.select?.name || '',
+      };
+    })
     .filter((i) => i.name);
   return { initiatives };
 }
@@ -638,6 +653,31 @@ async function handleUpload(request, env) {
   }
 }
 
+// ─── 전략과제 대분류/중분류 ──────────────────────────────────────────────────
+async function handleCategories(env) {
+  const [daePages, jungPages] = await Promise.all([
+    queryAll(env.DAEBUNRYU_DATA_SOURCE_ID, { sorts: [{ property: '전략과제_대분류', direction: 'ascending' }] }, env),
+    queryAll(env.JUNBUNRYU_DATA_SOURCE_ID, { sorts: [{ property: '전략과제_중분류', direction: 'ascending' }] }, env),
+  ]);
+
+  const 대분류 = daePages
+    .map((p) => ({
+      id: p.id,
+      name: (p.properties['전략과제_대분류']?.title || []).map((s) => s.plain_text || '').join(''),
+    }))
+    .filter((d) => d.name);
+
+  const 중분류 = jungPages
+    .map((p) => ({
+      id: p.id,
+      name: (p.properties['전략과제_중분류']?.title || []).map((s) => s.plain_text || '').join(''),
+      daebunryu_ids: (p.properties['전략과제_대분류']?.relation || []).map((r) => r.id),
+    }))
+    .filter((d) => d.name);
+
+  return { 대분류, 중분류 };
+}
+
 // ─── 전략과제 마스터 CRUD ────────────────────────────────────────────────────
 const INIT_PROP_DESC = '세부내용';
 
@@ -650,7 +690,10 @@ async function handleInitiativeGet(initiativeId, env) {
     const ownerIds = (props['담당 임원']?.relation || []).map((r) => r.id);
     const participantIds = (props['참여 임원']?.relation || []).map((r) => r.id);
     const description = (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join('');
-    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description };
+    const daebunryuId = (props['전략과제_대분류']?.relation || [])[0]?.id || '';
+    const junbunryuId = (props['전략과제_중분류']?.relation || [])[0]?.id || '';
+    const status = props['진행 상태']?.select?.name || '';
+    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, status };
   } catch (e) {
     return { error: `과제 조회 실패: ${e.message}` };
   }
@@ -665,16 +708,24 @@ async function handleInitiativeCreate(request, env) {
   const ownerIds = Array.isArray(body.owner_ids) ? body.owner_ids : [];
   const participantIds = Array.isArray(body.participant_ids) ? body.participant_ids : [];
   const description = (body.description || '').trim();
+  const daebunryuId = (body.daebunryu_id || '').trim();
+  const junbunryuId = (body.junbunryu_id || '').trim();
 
   if (!name) return { error: '과제명을 입력하세요.' };
   if (ownerIds.length === 0) return { error: '담당임원을 선택하세요.' };
+  if (!daebunryuId) return { error: '대분류를 선택하세요.' };
 
   const properties = {
     [INIT_PROP_NAME]: { title: [{ text: { content: name } }] },
     '담당 임원': { relation: ownerIds.map((id) => ({ id })) },
+    '전략과제_대분류': { relation: [{ id: daebunryuId }] },
+    '진행 상태': { select: { name: '진행중' } },
   };
   if (participantIds.length > 0) {
     properties['참여 임원'] = { relation: participantIds.map((id) => ({ id })) };
+  }
+  if (junbunryuId) {
+    properties['전략과제_중분류'] = { relation: [{ id: junbunryuId }] };
   }
   if (description) {
     properties[INIT_PROP_DESC] = { rich_text: [{ text: { content: description } }] };
@@ -704,10 +755,14 @@ async function handleInitiativeUpdate(request, env) {
   const ownerIds = body.owner_ids != null ? (Array.isArray(body.owner_ids) ? body.owner_ids : []) : null;
   const participantIds = body.participant_ids != null ? (Array.isArray(body.participant_ids) ? body.participant_ids : []) : null;
   const description = body.description != null ? String(body.description) : null;
+  const daebunryuId = body.daebunryu_id != null ? (body.daebunryu_id || '').trim() : null;
+  const junbunryuId = body.junbunryu_id != null ? (body.junbunryu_id || '').trim() : null;
+  const status = (body.status || '').trim();
 
   if (!initiativeId) return { error: 'initiative_id 필요.' };
   if (ownerIds !== null && ownerIds.length === 0) return { error: '담당임원을 1명 이상 선택하세요.' };
 
+  const VALID_STATUSES = ['진행중', '완료', '보류', '검토중'];
   const properties = {};
   if (name) properties[INIT_PROP_NAME] = { title: [{ text: { content: name } }] };
   if (ownerIds !== null) properties['담당 임원'] = { relation: ownerIds.map((id) => ({ id })) };
@@ -715,6 +770,9 @@ async function handleInitiativeUpdate(request, env) {
   if (description !== null) {
     properties[INIT_PROP_DESC] = { rich_text: description ? [{ text: { content: description } }] : [] };
   }
+  if (daebunryuId !== null) properties['전략과제_대분류'] = { relation: daebunryuId ? [{ id: daebunryuId }] : [] };
+  if (junbunryuId !== null) properties['전략과제_중분류'] = { relation: junbunryuId ? [{ id: junbunryuId }] : [] };
+  if (status && VALID_STATUSES.includes(status)) properties['진행 상태'] = { select: { name: status } };
 
   if (Object.keys(properties).length === 0) return { error: '수정할 항목이 없습니다.' };
 

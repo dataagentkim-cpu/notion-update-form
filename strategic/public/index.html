@@ -9,16 +9,15 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:           #ffffff;
     --card-bg:      #ffffff;
-    --card-border:  rgba(0, 0, 0, 0.08);
+    --card-border:  rgba(0,0,0,0.08);
     --card-shadow:  0 1px 2px rgba(0,0,0,0.04), 0 6px 24px rgba(0,0,0,0.06);
     --input-bg:     #ffffff;
-    --input-border: rgba(0, 0, 0, 0.14);
+    --input-border: rgba(0,0,0,0.14);
     --input-focus:  #4f46e5;
-    --text-primary: rgba(0, 0, 0, 0.88);
-    --text-secondary: rgba(0, 0, 0, 0.55);
-    --text-tertiary: rgba(0, 0, 0, 0.40);
+    --text-primary: rgba(0,0,0,0.88);
+    --text-secondary: rgba(0,0,0,0.55);
+    --text-tertiary: rgba(0,0,0,0.40);
     --accent:       #4f46e5;
     --accent-bg:    #eef2ff;
     --success:      #059669;
@@ -26,54 +25,35 @@
     --danger:       #dc2626;
     --danger-bg:    #fef2f2;
     --required:     #ef4444;
-    --badge-bg:     #ede9fe;
-    --badge-text:   #6d28d9;
-    --primary-grad: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    --primary-grad: linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
     --primary-text: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg:           #0e0e10;
       --card-bg:      #1c1c20;
-      --card-border:  rgba(255, 255, 255, 0.08);
+      --card-border:  rgba(255,255,255,0.08);
       --card-shadow:  0 1px 2px rgba(0,0,0,0.4), 0 6px 24px rgba(0,0,0,0.3);
       --input-bg:     #25252b;
-      --input-border: rgba(255, 255, 255, 0.12);
-      --text-primary: rgba(255, 255, 255, 0.94);
-      --text-secondary: rgba(255, 255, 255, 0.58);
-      --text-tertiary: rgba(255, 255, 255, 0.38);
-      --accent-bg:    rgba(124, 58, 237, 0.18);
-      --success-bg:   rgba(5, 150, 105, 0.18);
-      --danger-bg:    rgba(220, 38, 38, 0.18);
-      --badge-bg:     rgba(124, 58, 237, 0.28);
-      --badge-text:   #c4b5fd;
-      --primary-text: #ffffff;
+      --input-border: rgba(255,255,255,0.12);
+      --text-primary: rgba(255,255,255,0.94);
+      --text-secondary: rgba(255,255,255,0.58);
+      --text-tertiary: rgba(255,255,255,0.38);
+      --accent-bg:    rgba(124,58,237,0.18);
+      --success-bg:   rgba(5,150,105,0.18);
+      --danger-bg:    rgba(220,38,38,0.18);
     }
   }
 
-  html, body {
-    background: transparent;
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.011em;
-  }
+  html, body { background: transparent; color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.011em; }
   body { padding: 12px 8px calc(20px + env(safe-area-inset-bottom)); }
   .container { max-width: 680px; margin: 0 auto; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 20px 16px 22px; box-shadow: var(--card-shadow); }
 
-  .card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 16px;
-    padding: 20px 16px 22px;
-    box-shadow: var(--card-shadow);
-  }
   @media (max-width: 520px) {
     body { padding: 6px 0 calc(14px + env(safe-area-inset-bottom)); }
     .card { padding: 14px 10px 16px; border-radius: 12px; }
     .header { gap: 10px; margin-bottom: 14px; padding-bottom: 12px; }
     .header-icon { width: 34px; height: 34px; border-radius: 10px; }
-    .header-icon svg { width: 18px; height: 18px; }
     .header-title { font-size: 17px; }
     .header-sub { font-size: 12px; }
     .field { margin-bottom: 11px; }
@@ -81,54 +61,22 @@
     .btn { padding: 0 14px; }
   }
 
-  /* Header */
-  .header {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 20px; padding-bottom: 18px;
-    border-bottom: 1px solid var(--card-border);
-  }
-  .header-icon {
-    flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px;
-    background: var(--primary-grad);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
-  }
+  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--card-border); }
+  .header-icon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: var(--primary-grad); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(79,70,229,0.35); }
   .header-icon svg { width: 22px; height: 22px; color: #fff; }
   .header-text { flex: 1; min-width: 0; }
-  .header-title {
-    font-size: 20px; font-weight: 700; line-height: 1.25;
-    letter-spacing: -0.022em; margin-bottom: 3px;
-    background: var(--primary-grad);
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent; display: inline-block;
-  }
+  .header-title { font-size: 20px; font-weight: 700; line-height: 1.25; letter-spacing: -0.022em; margin-bottom: 3px; background: var(--primary-grad); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-block; }
   .header-sub { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
 
-  /* Tabs */
-  .tabs {
-    display: flex; gap: 4px; padding: 4px;
-    background: var(--input-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 11px; margin-bottom: 16px; overflow-x: auto;
-  }
-  .tab {
-    flex: 1; min-width: max-content; padding: 9px 14px;
-    background: transparent; border: none; border-radius: 8px;
-    font-family: inherit; font-size: 13px; font-weight: 600;
-    color: var(--text-secondary); cursor: pointer;
-    transition: background 0.15s, color 0.15s; white-space: nowrap;
-  }
+  .tabs { display: flex; gap: 4px; padding: 4px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 11px; margin-bottom: 16px; overflow-x: auto; }
+  .tab { flex: 1; min-width: max-content; padding: 9px 14px; background: transparent; border: none; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
   .tab:hover { color: var(--text-primary); }
   .tab.active { background: var(--card-bg); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
   .mode-panel { display: none; }
   .mode-panel.active { display: block; }
 
-  /* Fields */
   .field { margin-bottom: 14px; }
-  .field-label {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-    font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;
-  }
+  .field-label { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
   .field-hint { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
   .req { color: var(--required); font-weight: 700; }
   .field-row { display: grid; grid-template-columns: 1fr; gap: 14px; }
@@ -136,123 +84,56 @@
 
   .input, .textarea, .select {
     width: 100%; padding: 12px 14px;
-    background: var(--input-bg);
-    border: 1.5px solid var(--input-border); border-radius: 10px;
-    font-family: inherit; font-size: 16px; line-height: 1.4;
-    color: var(--text-primary);
-    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    -webkit-appearance: none; appearance: none;
+    background: var(--input-bg); border: 1.5px solid var(--input-border); border-radius: 10px;
+    font-family: inherit; font-size: 16px; line-height: 1.4; color: var(--text-primary);
+    transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none; appearance: none;
   }
   .input:hover, .textarea:hover, .select:hover:not(:disabled) { border-color: rgba(0,0,0,0.25); }
-  @media (prefers-color-scheme: dark) {
-    .input:hover, .textarea:hover, .select:hover:not(:disabled) { border-color: rgba(255,255,255,0.25); }
-  }
-  .select {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>");
-    background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px;
-  }
+  @media (prefers-color-scheme: dark) { .input:hover, .textarea:hover, .select:hover:not(:disabled) { border-color: rgba(255,255,255,0.25); } }
+  .select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5l5 5 5-5'/></svg>"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px; }
   .select:disabled { opacity: 0.55; cursor: not-allowed; }
-  .input:focus, .textarea:focus, .select:focus {
-    outline: none; border-color: var(--input-focus);
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
-  }
+  .input:focus, .textarea:focus, .select:focus { outline: none; border-color: var(--input-focus); box-shadow: 0 0 0 4px rgba(79,70,229,0.14); }
   .input:disabled, .textarea:disabled { opacity: 0.55; cursor: not-allowed; }
   .input::placeholder, .textarea::placeholder { color: var(--text-tertiary); }
   input[type="date"] { min-height: 46px; }
   .textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
 
-  /* Author chip */
-  .author-chip {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 10px 14px; background: var(--accent-bg); color: var(--accent);
-    border-radius: 9px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent;
-  }
+  .author-chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--accent-bg); color: var(--accent); border-radius: 9px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; }
   .author-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
   /* People picker */
-  .people-picker {
-    position: relative;
-    border: 1.5px solid var(--input-border); border-radius: 10px;
-    padding: 8px 10px; background: var(--input-bg);
-    cursor: text; transition: border-color 0.2s, box-shadow 0.2s;
-    min-height: 46px; display: flex; flex-direction: column; gap: 6px;
-  }
-  .people-picker:focus-within {
-    border-color: var(--input-focus);
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
-  }
+  .people-picker { position: relative; border: 1.5px solid var(--input-border); border-radius: 10px; padding: 8px 10px; background: var(--input-bg); cursor: text; transition: border-color 0.2s, box-shadow 0.2s; min-height: 46px; display: flex; flex-direction: column; gap: 6px; }
+  .people-picker:focus-within { border-color: var(--input-focus); box-shadow: 0 0 0 4px rgba(79,70,229,0.14); }
   .people-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-  .ptag {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 10px; background: var(--accent-bg); color: var(--accent);
-    border-radius: 20px; font-size: 13px; font-weight: 600;
-  }
-  .ptag-rm {
-    background: none; border: none; cursor: pointer;
-    color: var(--accent); font-size: 16px; line-height: 1;
-    padding: 0 2px; opacity: 0.7; font-family: inherit;
-  }
+  .ptag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; background: var(--accent-bg); color: var(--accent); border-radius: 20px; font-size: 13px; font-weight: 600; }
+  .ptag-rm { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 16px; line-height: 1; padding: 0 2px; opacity: 0.7; font-family: inherit; }
   .ptag-rm:hover { opacity: 1; }
-  .people-input {
-    border: none; background: transparent; outline: none;
-    font-family: inherit; font-size: 15px; color: var(--text-primary);
-    width: 100%; padding: 2px 4px; min-width: 80px;
-  }
+  .people-input { border: none; background: transparent; outline: none; font-family: inherit; font-size: 15px; color: var(--text-primary); width: 100%; padding: 2px 4px; }
   .people-input::placeholder { color: var(--text-tertiary); }
-  .people-dropdown {
-    display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
-    background: var(--card-bg); border: 1.5px solid var(--input-border);
-    border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.14);
-    max-height: 200px; overflow-y: auto;
-  }
+  .people-dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200; background: var(--card-bg); border: 1.5px solid var(--input-border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); max-height: 200px; overflow-y: auto; }
   .people-dropdown.show { display: block; }
-  .pdrop-opt {
-    padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--text-primary);
-    transition: background 0.1s;
-  }
+  .pdrop-opt { padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--text-primary); transition: background 0.1s; }
   .pdrop-opt:hover { background: var(--accent-bg); color: var(--accent); }
   .pdrop-empty { padding: 10px 14px; font-size: 13px; color: var(--text-tertiary); }
 
-  /* Buttons */
   .actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 18px; }
   @media (min-width: 520px) { .actions { grid-template-columns: auto 1fr auto; } }
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    min-height: 46px; padding: 0 18px;
-    background: var(--card-bg); border: 1.5px solid var(--input-border); border-radius: 11px;
-    font-family: inherit; font-size: 15px; font-weight: 600; color: var(--text-primary);
-    cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.08s, box-shadow 0.2s;
-    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 0 18px; background: var(--card-bg); border: 1.5px solid var(--input-border); border-radius: 11px; font-family: inherit; font-size: 15px; font-weight: 600; color: var(--text-primary); cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.08s, box-shadow 0.2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   .btn:hover { border-color: var(--text-secondary); }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { cursor: not-allowed; opacity: 0.5; }
-  .btn-primary {
-    background: var(--primary-grad); color: var(--primary-text); border: none;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
-  }
-  .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45); transform: translateY(-1px); }
+  .btn-primary { background: var(--primary-grad); color: var(--primary-text); border: none; box-shadow: 0 4px 14px rgba(79,70,229,0.35); }
+  .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 6px 20px rgba(79,70,229,0.45); transform: translateY(-1px); }
   .btn-primary:active { transform: translateY(0) scale(0.98); }
-  .btn-danger {
-    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-    color: #fff; border: none; box-shadow: 0 4px 14px rgba(220,38,38,0.35);
-  }
+  .btn-danger { background: linear-gradient(135deg,#dc2626 0%,#991b1b 100%); color: #fff; border: none; box-shadow: 0 4px 14px rgba(220,38,38,0.35); }
 
-  /* Status */
-  .status {
-    margin-bottom: 14px; padding: 12px 14px; border-radius: 9px;
-    font-size: 14px; line-height: 1.5; display: none;
-  }
+  .status { margin-bottom: 14px; padding: 12px 14px; border-radius: 9px; font-size: 14px; line-height: 1.5; display: none; }
   .status.show { display: block; }
   .status-success { background: var(--success-bg); color: var(--success); }
   .status-error   { background: var(--danger-bg);  color: var(--danger); }
   .status-info    { background: var(--accent-bg);  color: var(--accent); }
 
-  .loading-tag {
-    display: inline-block; padding: 4px 10px; background: var(--input-bg);
-    border: 1px dashed var(--input-border); border-radius: 8px;
-    font-size: 13px; color: var(--text-tertiary);
-  }
+  .section-divider { height: 1px; background: var(--card-border); margin: 16px 0; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -284,11 +165,9 @@
 
   <!-- 공통: 작성자/날짜 -->
   <div class="field-row">
-    <div class="field" id="authorField">
+    <div class="field">
       <label class="field-label" for="author">작성자(임원) <span class="req">*</span></label>
-      <select id="author" class="select" required disabled>
-        <option value="">불러오는 중...</option>
-      </select>
+      <select id="author" class="select" required disabled><option value="">불러오는 중...</option></select>
       <div id="authorLocked" class="author-chip" style="display:none">
         <span class="dot"></span><span id="authorLockedName">—</span>
       </div>
@@ -309,13 +188,11 @@
     </div>
     <div class="field">
       <label class="field-label" for="summary">요약 제목 <span class="req">*</span></label>
-      <input id="summary" class="input" type="text" required
-             placeholder="예) 인도네시아 금융지주사 본인가 협의 진행 경과" autocomplete="off"/>
+      <input id="summary" class="input" type="text" required placeholder="예) 인도네시아 금융지주사 본인가 협의 진행 경과" autocomplete="off"/>
     </div>
     <div class="field">
       <label class="field-label" for="content">업데이트 내용</label>
-      <textarea id="content" class="textarea"
-                placeholder="예) 금감원 협의 일정 1차 완료. 현지 파트너 후보 3개사 실사 진행 중이며, 5월 말 우선협상 대상자 선정 예정."></textarea>
+      <textarea id="content" class="textarea" placeholder="예) 금감원 협의 일정 1차 완료. 현지 파트너 후보 3개사 실사 진행 중이며, 5월 말 우선협상 대상자 선정 예정."></textarea>
     </div>
     <div class="field-row">
       <div class="field">
@@ -348,8 +225,20 @@
       <label class="field-label" for="newTaskDesc">세부내용</label>
       <textarea id="newTaskDesc" class="textarea" placeholder="예) 한국과 동남아의 HNW 사업 공동 추진 (한화투자증권 제휴 방식)"></textarea>
     </div>
+    <div class="section-divider"></div>
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="newDaebunryu">대분류 <span class="req">*</span></label>
+        <select id="newDaebunryu" class="select"><option value="">불러오는 중...</option></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="newJunbunryu">중분류</label>
+        <select id="newJunbunryu" class="select" disabled><option value="">대분류를 먼저 선택하세요</option></select>
+      </div>
+    </div>
+    <div class="section-divider"></div>
     <div class="field">
-      <label class="field-label">담당임원 <span class="req">*</span> <span class="field-hint">1명 이상 선택</span></label>
+      <label class="field-label">담당임원 <span class="req">*</span> <span class="field-hint">1명 이상</span></label>
       <div id="createOwnerPicker"></div>
     </div>
     <div class="field">
@@ -366,19 +255,38 @@
   <form id="editForm" class="mode-panel" data-panel="edit">
     <div class="field">
       <label class="field-label" for="editInitiativeSel">수정할 과제 선택 <span class="req">*</span></label>
-      <select id="editInitiativeSel" class="select">
-        <option value="">과제를 선택하세요</option>
-      </select>
+      <select id="editInitiativeSel" class="select"><option value="">과제를 선택하세요</option></select>
     </div>
     <div id="editFields" style="display:none">
       <div class="field">
         <label class="field-label" for="editTaskName">전략과제 명 <span class="req">*</span></label>
-        <input id="editTaskName" class="input" type="text" placeholder="과제명"/>
+        <input id="editTaskName" class="input" type="text"/>
       </div>
       <div class="field">
         <label class="field-label" for="editTaskDesc">세부내용</label>
-        <textarea id="editTaskDesc" class="textarea" placeholder="세부내용"></textarea>
+        <textarea id="editTaskDesc" class="textarea"></textarea>
       </div>
+      <div class="field">
+        <label class="field-label" for="editStatus">진행 상태</label>
+        <select id="editStatus" class="select">
+          <option value="진행중">진행중</option>
+          <option value="완료">완료</option>
+          <option value="보류">보류</option>
+          <option value="검토중">검토중</option>
+        </select>
+      </div>
+      <div class="section-divider"></div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label" for="editDaebunryu">대분류</label>
+          <select id="editDaebunryu" class="select"><option value="">선택</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="editJunbunryu">중분류</label>
+          <select id="editJunbunryu" class="select"><option value="">선택</option></select>
+        </div>
+      </div>
+      <div class="section-divider"></div>
       <div class="field">
         <label class="field-label">담당임원 <span class="req">*</span></label>
         <div id="editOwnerPicker"></div>
@@ -399,9 +307,7 @@
   <form id="deleteForm" class="mode-panel" data-panel="delete">
     <div class="field">
       <label class="field-label" for="deleteInitiativeSel">삭제할 과제 선택 <span class="req">*</span></label>
-      <select id="deleteInitiativeSel" class="select">
-        <option value="">과제를 선택하세요</option>
-      </select>
+      <select id="deleteInitiativeSel" class="select"><option value="">과제를 선택하세요</option></select>
     </div>
     <div class="field">
       <div style="padding:12px 14px;background:var(--danger-bg);color:var(--danger);border-radius:9px;font-size:13px">
@@ -429,36 +335,21 @@
     if (!r.ok) throw new Error(d.error || 'AI 키 발급 실패');
     _llmKeyCache = d; return d;
   }
-  const POLISH_SYSTEM_PROMPT = `당신은 한화금융그룹 임원이 사장에게 올리는 전략과제 진행 보고를 다듬는 비서입니다.
-임원이 작성한 거친 메모(요약 제목 + 상세 내용)를 받아 사장 보고용 격식체로 정제하여 JSON으로만 응답합니다.
-원칙: 사실 보존 최우선. 보고체 사용(~함, ~예정, ~검토). 구어체·이모지 금지.
-출력 형식: summary(30자 이내 한 줄), content(3~5줄 단락).`;
   async function polishViaGemini(summary, content) {
     const { key, model } = await getLlmKey();
+    const PROMPT = `한화금융그룹 임원 전략과제 진행보고 다듬기. 사실 보존 최우선. 보고체(~함,~예정,~검토). 구어체·이모지 금지. JSON: {summary(30자 이내), content(3~5줄)}`;
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
-      {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: POLISH_SYSTEM_PROMPT }] },
-          contents: [{ role: 'user', parts: [{ text: `[요약 제목 초안]\n${summary || '(없음)'}\n\n[상세 내용 초안]\n${content || '(없음)'}` }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: { type: 'object', properties: { summary: { type: 'string' }, content: { type: 'string' } }, required: ['summary', 'content'] },
-            maxOutputTokens: 1024, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
-      }
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: PROMPT }] }, contents: [{ role: 'user', parts: [{ text: `[요약]\n${summary}\n\n[내용]\n${content}` }] }], generationConfig: { responseMimeType: 'application/json', responseSchema: { type: 'object', properties: { summary: { type: 'string' }, content: { type: 'string' } }, required: ['summary', 'content'] }, maxOutputTokens: 1024, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } } }) }
     );
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || ('Gemini 오류 ' + res.status));
+    if (!res.ok) throw new Error(data.error?.message || 'Gemini 오류');
     try { return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || ''); }
     catch { return { summary, content }; }
   }
-  // ──────────────────────────────────────────────────────────────────
 
   const $ = (id) => document.getElementById(id);
-
   const urlParams = new URLSearchParams(location.search);
   const urlAuthorId = (urlParams.get('author_id') || '').trim();
   const urlAuthorName = (urlParams.get('author') || '').trim();
@@ -481,12 +372,12 @@
 
   let executiveList = [];
   let executiveMap = new Map();
-  let initiativeMap = new Map(); // id → name
+  let initiativeMap = new Map(); // id → { name, owner_ids, participant_ids, description, daebunryu_id, junbunryu_id, status }
+  let categoryData = { 대분류: [], 중분류: [] };
   let currentAuthorId = '';
 
   function showStatus(msg, type) {
-    const s = $('status');
-    s.textContent = msg; s.className = 'status show status-' + type;
+    const s = $('status'); s.textContent = msg; s.className = 'status show status-' + type;
     try { s.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch {}
   }
   function hideStatus() { const s = $('status'); s.className = 'status'; s.textContent = ''; }
@@ -498,15 +389,44 @@
     $('authorLockedName').textContent = name;
   }
 
+  // ─── 대분류/중분류 select 헬퍼 ───────────────────────────────────────
+  function populateDaebunryuSel(selId, selectedId) {
+    const sel = $(selId);
+    sel.innerHTML = '<option value="">선택</option>';
+    for (const d of categoryData.대분류) {
+      const opt = document.createElement('option');
+      opt.value = d.id; opt.textContent = d.name;
+      if (d.id === selectedId) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+
+  function populateJunbunryuSel(selId, daebunryuId, selectedId) {
+    const sel = $(selId);
+    sel.innerHTML = '<option value="">선택</option>';
+    const filtered = categoryData.중분류.filter(j => !daebunryuId || j.daebunryu_ids.includes(daebunryuId));
+    if (filtered.length === 0) {
+      sel.innerHTML = '<option value="">해당 중분류 없음</option>';
+      sel.disabled = true;
+    } else {
+      sel.disabled = false;
+      for (const j of filtered) {
+        const opt = document.createElement('option');
+        opt.value = j.id; opt.textContent = j.name;
+        if (j.id === selectedId) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+  }
+
+  // ─── 과제 드롭다운 ────────────────────────────────────────────────
   function populateInitiativeSel(selId, placeholder) {
     const sel = $(selId);
     sel.innerHTML = '';
-    const ph = document.createElement('option');
-    ph.value = ''; ph.textContent = placeholder;
+    const ph = document.createElement('option'); ph.value = ''; ph.textContent = placeholder;
     sel.appendChild(ph);
-    for (const [id, name] of initiativeMap) {
-      const opt = document.createElement('option');
-      opt.value = id; opt.textContent = name;
+    for (const [id, d] of initiativeMap) {
+      const opt = document.createElement('option'); opt.value = id; opt.textContent = d.name;
       sel.appendChild(opt);
     }
   }
@@ -517,104 +437,70 @@
     $('btnDelete').disabled = true;
     $('btnEdit').disabled = true;
     $('editFields').style.display = 'none';
+    $('editLoading').style.display = 'none';
   }
 
   // ─── People Picker ────────────────────────────────────────────────
   function PeoplePicker(containerId) {
     const container = $(containerId);
     container.innerHTML = '';
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'people-picker';
-
-    const tagsEl = document.createElement('div');
-    tagsEl.className = 'people-tags';
-
-    const inputEl = document.createElement('input');
-    inputEl.className = 'people-input';
-    inputEl.placeholder = '이름으로 검색...';
-    inputEl.autocomplete = 'off';
-    inputEl.setAttribute('type', 'text');
-
-    const dropEl = document.createElement('div');
-    dropEl.className = 'people-dropdown';
-
-    wrapper.appendChild(tagsEl);
-    wrapper.appendChild(inputEl);
-    wrapper.appendChild(dropEl);
+    const wrapper = document.createElement('div'); wrapper.className = 'people-picker';
+    const tagsEl = document.createElement('div'); tagsEl.className = 'people-tags';
+    const inputEl = document.createElement('input'); inputEl.className = 'people-input'; inputEl.placeholder = '이름으로 검색...'; inputEl.autocomplete = 'off'; inputEl.type = 'text';
+    const dropEl = document.createElement('div'); dropEl.className = 'people-dropdown';
+    wrapper.appendChild(tagsEl); wrapper.appendChild(inputEl); wrapper.appendChild(dropEl);
     container.appendChild(wrapper);
-
     const selected = new Map();
 
     function renderTags() {
       tagsEl.innerHTML = '';
       for (const [id, name] of selected) {
-        const tag = document.createElement('span');
-        tag.className = 'ptag';
-        const txt = document.createElement('span');
-        txt.textContent = name;
-        const rm = document.createElement('button');
-        rm.type = 'button'; rm.className = 'ptag-rm'; rm.textContent = '×';
+        const tag = document.createElement('span'); tag.className = 'ptag';
+        const txt = document.createElement('span'); txt.textContent = name;
+        const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'ptag-rm'; rm.textContent = '×';
         rm.addEventListener('click', (e) => { e.stopPropagation(); selected.delete(id); renderTags(); });
-        tag.append(txt, rm);
-        tagsEl.appendChild(tag);
+        tag.append(txt, rm); tagsEl.appendChild(tag);
       }
     }
-
     function showDrop(query) {
       dropEl.innerHTML = '';
       const q = query.trim();
       const filtered = executiveList.filter(e => !selected.has(e.id) && (!q || e.name.includes(q)));
       if (filtered.length === 0) {
-        const d = document.createElement('div');
-        d.className = 'pdrop-empty';
-        d.textContent = q ? '검색 결과 없음' : (executiveList.length === 0 ? '임원 목록 로딩 중...' : '선택 가능한 임원이 없습니다');
+        const d = document.createElement('div'); d.className = 'pdrop-empty';
+        d.textContent = q ? '검색 결과 없음' : (executiveList.length === 0 ? '임원 목록 로딩 중...' : '선택 가능한 임원 없음');
         dropEl.appendChild(d);
       } else {
         for (const e of filtered) {
-          const opt = document.createElement('div');
-          opt.className = 'pdrop-opt'; opt.textContent = e.name;
-          opt.addEventListener('mousedown', (ev) => {
-            ev.preventDefault();
-            selected.set(e.id, e.name);
-            inputEl.value = ''; renderTags(); dropEl.classList.remove('show');
-          });
+          const opt = document.createElement('div'); opt.className = 'pdrop-opt'; opt.textContent = e.name;
+          opt.addEventListener('mousedown', (ev) => { ev.preventDefault(); selected.set(e.id, e.name); inputEl.value = ''; renderTags(); dropEl.classList.remove('show'); });
           dropEl.appendChild(opt);
         }
       }
       dropEl.classList.add('show');
     }
-
     inputEl.addEventListener('focus', () => showDrop(inputEl.value));
     inputEl.addEventListener('input', () => showDrop(inputEl.value));
     inputEl.addEventListener('blur', () => setTimeout(() => dropEl.classList.remove('show'), 150));
     wrapper.addEventListener('click', (e) => { if (!e.target.closest('.ptag-rm')) inputEl.focus(); });
-
     return {
       getIds() { return [...selected.keys()]; },
-      setIds(ids) {
-        selected.clear();
-        for (const id of ids) {
-          const e = executiveList.find(x => x.id === id);
-          if (e) selected.set(id, e.name);
-        }
-        renderTags();
-      },
+      setIds(ids) { selected.clear(); for (const id of ids) { const e = executiveList.find(x => x.id === id); if (e) selected.set(id, e.name); } renderTags(); },
       reset() { selected.clear(); renderTags(); inputEl.value = ''; },
     };
   }
 
   let pickers = {};
 
+  // ─── 초기 로드 ────────────────────────────────────────────────────
   async function loadExecutives() {
     try {
       const res = await fetch(WORKER_URL + '/api/bootstrap');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       executiveList = data.executives || [];
       executiveMap = new Map(executiveList.map(e => [e.id, e.name]));
 
-      // 임원 고정
       if (urlAuthorId && executiveMap.has(urlAuthorId)) {
         lockAuthor(urlAuthorId, executiveMap.get(urlAuthorId));
       } else if (urlAuthorName) {
@@ -622,28 +508,36 @@
         if (match) lockAuthor(match.id, match.name);
       }
       if (!currentAuthorId) {
-        const sel = $('author');
-        sel.innerHTML = '';
-        const ph = document.createElement('option'); ph.value = ''; ph.textContent = '임원을 선택하세요';
-        sel.appendChild(ph);
-        for (const e of executiveList) {
-          const opt = document.createElement('option'); opt.value = e.id; opt.textContent = e.name;
-          sel.appendChild(opt);
-        }
+        const sel = $('author'); sel.innerHTML = '';
+        const ph = document.createElement('option'); ph.value = ''; ph.textContent = '임원을 선택하세요'; sel.appendChild(ph);
+        for (const e of executiveList) { const opt = document.createElement('option'); opt.value = e.id; opt.textContent = e.name; sel.appendChild(opt); }
         sel.disabled = false;
         const last = localStorage.getItem(LS_AUTHOR_KEY);
         if (last && executiveMap.has(last)) { sel.value = last; currentAuthorId = last; }
       }
 
-      // people picker 초기화 (임원 목록 로드 후)
       pickers.createOwner = PeoplePicker('createOwnerPicker');
       pickers.createParticipant = PeoplePicker('createParticipantPicker');
       pickers.editOwner = PeoplePicker('editOwnerPicker');
       pickers.editParticipant = PeoplePicker('editParticipantPicker');
 
       await loadInitiatives(currentAuthorId);
+    } catch (err) { showStatus('❌ 임원 목록 로드 실패: ' + err.message, 'error'); }
+  }
+
+  async function loadCategories() {
+    try {
+      const res = await fetch(WORKER_URL + '/api/categories');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '서버 오류');
+      categoryData = data;
+      populateDaebunryuSel('newDaebunryu', '');
+      $('newJunbunryu').disabled = false;
+      populateJunbunryuSel('newJunbunryu', '', '');
+      populateDaebunryuSel('editDaebunryu', '');
+      populateJunbunryuSel('editJunbunryu', '', '');
     } catch (err) {
-      showStatus('❌ 임원 목록 로드 실패: ' + err.message, 'error');
+      $('newDaebunryu').innerHTML = '<option value="">대분류 로드 실패</option>';
     }
   }
 
@@ -657,9 +551,9 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiatives?executive_id=' + encodeURIComponent(executiveId));
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       const list = data.initiatives || [];
-      initiativeMap = new Map(list.map(i => [i.id, i.name]));
+      initiativeMap = new Map(list.map(i => [i.id, i]));
       populateInitiativeSel('initiativeSel', list.length ? '전략과제를 선택하세요' : '담당 과제가 없습니다');
       if (list.length === 1) $('initiativeSel').value = list[0].id;
       refreshManageSelects();
@@ -670,52 +564,49 @@
   }
 
   $('author').addEventListener('change', () => {
-    const id = $('author').value;
-    currentAuthorId = id;
+    const id = $('author').value; currentAuthorId = id;
     if (id) localStorage.setItem(LS_AUTHOR_KEY, id);
     loadInitiatives(id);
+  });
+
+  // 대분류 → 중분류 연동
+  $('newDaebunryu').addEventListener('change', function () {
+    populateJunbunryuSel('newJunbunryu', this.value, '');
+  });
+  $('editDaebunryu').addEventListener('change', function () {
+    populateJunbunryuSel('editJunbunryu', this.value, '');
   });
 
   // ─── 진척사항 입력 ────────────────────────────────────────────────
   let originalDraft = null;
   const btnAI = $('btnAI');
-
-  function resetAIButton() {
-    originalDraft = null; btnAI.dataset.mode = ''; btnAI.innerHTML = '✨ AI로 다듬기';
-  }
+  function resetAIButton() { originalDraft = null; btnAI.dataset.mode = ''; btnAI.innerHTML = '✨ AI로 다듬기'; }
 
   $('btnReset').addEventListener('click', () => {
-    $('summary').value = ''; $('content').value = '';
-    $('date').value = todayStr(); $('priority').value = '과제이력 관리';
-    $('files').value = ''; $('filesStatus').textContent = '';
-    $('initiativeSel').value = '';
-    resetAIButton(); hideStatus();
+    $('summary').value = ''; $('content').value = ''; $('date').value = todayStr();
+    $('priority').value = '과제이력 관리'; $('files').value = ''; $('filesStatus').textContent = '';
+    $('initiativeSel').value = ''; resetAIButton(); hideStatus();
   });
   $('files').addEventListener('change', () => {
-    const fs = $('files').files;
-    $('filesStatus').textContent = fs && fs.length ? `${fs.length}개 선택됨` : '';
+    const fs = $('files').files; $('filesStatus').textContent = fs && fs.length ? `${fs.length}개 선택됨` : '';
   });
 
   btnAI.addEventListener('click', async () => {
     if (btnAI.dataset.mode === 'undo' && originalDraft) {
       $('summary').value = originalDraft.summary; $('content').value = originalDraft.content;
-      originalDraft = null; btnAI.dataset.mode = ''; btnAI.innerHTML = '✨ AI로 다듬기';
-      hideStatus(); return;
+      originalDraft = null; btnAI.dataset.mode = ''; btnAI.innerHTML = '✨ AI로 다듬기'; hideStatus(); return;
     }
-    const summary = $('summary').value.trim();
-    const content = $('content').value.trim();
+    const summary = $('summary').value.trim(); const content = $('content').value.trim();
     if (!summary && !content) { showStatus('다듬을 내용을 먼저 입력하세요.', 'error'); return; }
     hideStatus(); btnAI.disabled = true; btnAI.innerHTML = '⏳ 다듬는 중...';
     try {
       const data = await polishViaGemini(summary, content);
       originalDraft = { summary, content };
       $('summary').value = data.summary || summary; $('content').value = data.content || content;
-      showStatus('✨ AI가 다듬었습니다. 검토 후 저장하거나, "↩ 원문 복원"으로 되돌리세요.', 'success');
+      showStatus('✨ AI가 다듬었습니다. 검토 후 저장하거나 "↩ 원문 복원"으로 되돌리세요.', 'success');
       btnAI.dataset.mode = 'undo'; btnAI.innerHTML = '↩ 원문 복원';
-    } catch (err) {
-      showStatus('❌ 다듬기 실패: ' + err.message, 'error');
-      btnAI.innerHTML = '✨ AI로 다듬기';
-    } finally { btnAI.disabled = false; }
+    } catch (err) { showStatus('❌ 다듬기 실패: ' + err.message, 'error'); btnAI.innerHTML = '✨ AI로 다듬기'; }
+    finally { btnAI.disabled = false; }
   });
 
   $('updateForm').addEventListener('submit', async (e) => {
@@ -724,54 +615,36 @@
     if (!currentAuthorId) { showStatus('❌ 작성자를 선택하세요.', 'error'); return; }
     if (!initiativeId) { showStatus('❌ 전략과제를 선택하세요.', 'error'); return; }
 
-    const btnSave = $('btnSave');
-    btnSave.disabled = true; const origText = btnSave.innerHTML; btnSave.innerHTML = '⏳ 제출 중...';
-    const filesStatus = $('filesStatus');
-    const fileEls = $('files').files;
-    const fileUploads = [];
+    const btnSave = $('btnSave'); btnSave.disabled = true;
+    const origText = btnSave.innerHTML; btnSave.innerHTML = '⏳ 제출 중...';
+    const filesStatus = $('filesStatus'); const fileEls = $('files').files; const fileUploads = [];
     if (fileEls && fileEls.length > 0) {
       for (let i = 0; i < fileEls.length; i++) {
-        const f = fileEls[i];
-        filesStatus.textContent = `⏳ 업로드 중 ${i+1}/${fileEls.length}: ${f.name}`;
+        const f = fileEls[i]; filesStatus.textContent = `⏳ 업로드 중 ${i+1}/${fileEls.length}: ${f.name}`;
         const fd = new FormData(); fd.append('file', f, f.name);
         try {
           const r = await fetch(WORKER_URL + '/api/upload', { method: 'POST', body: fd });
-          const d = await r.json();
-          if (!r.ok) throw new Error(d.error || ('업로드 오류 ' + r.status));
+          const d = await r.json(); if (!r.ok) throw new Error(d.error || '업로드 오류 ' + r.status);
           fileUploads.push({ id: d.id, name: d.name });
-        } catch (err) {
-          showStatus('❌ 파일 업로드 실패 (' + f.name + '): ' + err.message, 'error');
-          btnSave.disabled = false; btnSave.innerHTML = origText; filesStatus.textContent = ''; return;
-        }
+        } catch (err) { showStatus('❌ 파일 업로드 실패 (' + f.name + '): ' + err.message, 'error'); btnSave.disabled = false; btnSave.innerHTML = origText; filesStatus.textContent = ''; return; }
       }
       filesStatus.textContent = `✅ ${fileEls.length}개 업로드 완료`;
     }
     const payload = {
-      initiative_id: initiativeId,
-      initiative_name: initiativeMap.get(initiativeId) || '',
-      author_id: currentAuthorId,
-      author_name: executiveMap.get(currentAuthorId) || '',
-      summary: $('summary').value.trim(),
-      content: $('content').value.trim(),
-      date: $('date').value,
-      priority: $('priority').value || '과제이력 관리',
-      file_uploads: fileUploads,
+      initiative_id: initiativeId, initiative_name: initiativeMap.get(initiativeId)?.name || '',
+      author_id: currentAuthorId, author_name: executiveMap.get(currentAuthorId) || '',
+      summary: $('summary').value.trim(), content: $('content').value.trim(),
+      date: $('date').value, priority: $('priority').value || '과제이력 관리', file_uploads: fileUploads,
     };
     try {
-      const res = await fetch(WORKER_URL + '/api/save', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(WORKER_URL + '/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       const warnings = (data.warnings || []).join(' / ');
       showStatus('✅ 업데이트가 제출되었습니다.' + (warnings ? ' (' + warnings + ')' : ''), 'success');
-      $('summary').value = ''; $('content').value = '';
-      $('priority').value = '과제이력 관리'; $('files').value = ''; filesStatus.textContent = '';
-      resetAIButton();
-    } catch (err) {
-      showStatus('❌ 제출 실패: ' + err.message, 'error');
-    } finally { btnSave.disabled = false; btnSave.innerHTML = origText; }
+      $('summary').value = ''; $('content').value = ''; $('priority').value = '과제이력 관리'; $('files').value = ''; filesStatus.textContent = ''; resetAIButton();
+    } catch (err) { showStatus('❌ 제출 실패: ' + err.message, 'error'); }
+    finally { btnSave.disabled = false; btnSave.innerHTML = origText; }
   });
 
   // ─── 신규 과제 ────────────────────────────────────────────────────
@@ -779,63 +652,59 @@
     e.preventDefault(); hideStatus();
     const name = $('newTaskName').value.trim();
     const description = $('newTaskDesc').value.trim();
+    const daebunryuId = $('newDaebunryu').value;
+    const junbunryuId = $('newJunbunryu').value;
     const ownerIds = pickers.createOwner?.getIds() || [];
     const participantIds = pickers.createParticipant?.getIds() || [];
     if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
+    if (!daebunryuId) { showStatus('❌ 대분류를 선택하세요.', 'error'); return; }
     if (ownerIds.length === 0) { showStatus('❌ 담당임원을 1명 이상 선택하세요.', 'error'); return; }
 
-    const btn = $('btnCreate');
-    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 생성 중...';
+    const btn = $('btnCreate'); btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 생성 중...';
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ name, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       showStatus('✅ 신규 전략과제가 생성되었습니다: ' + name, 'success');
-      $('newTaskName').value = ''; $('newTaskDesc').value = '';
+      $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = '';
       pickers.createOwner?.reset(); pickers.createParticipant?.reset();
-      if (data.page_id) initiativeMap.set(data.page_id, name);
+      if (data.page_id) initiativeMap.set(data.page_id, { name, description, owner_ids: ownerIds, participant_ids: participantIds, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, status: '진행중' });
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
-    } catch (err) {
-      showStatus('❌ 생성 실패: ' + err.message, 'error');
-    } finally { btn.disabled = false; btn.innerHTML = orig; }
+    } catch (err) { showStatus('❌ 생성 실패: ' + err.message, 'error'); }
+    finally { btn.disabled = false; btn.innerHTML = orig; }
   });
   $('btnCreateReset').addEventListener('click', () => {
-    $('newTaskName').value = ''; $('newTaskDesc').value = '';
-    pickers.createOwner?.reset(); pickers.createParticipant?.reset();
-    hideStatus();
+    $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = '';
+    pickers.createOwner?.reset(); pickers.createParticipant?.reset(); hideStatus();
   });
 
   // ─── 과제 수정 ────────────────────────────────────────────────────
   let editingInitiativeId = null;
 
-  $('editInitiativeSel').addEventListener('change', async function () {
+  $('editInitiativeSel').addEventListener('change', function () {
     const id = this.value;
-    $('editFields').style.display = 'none';
-    $('editLoading').style.display = 'none';
-    $('btnEdit').disabled = true;
-    editingInitiativeId = null;
+    $('editFields').style.display = 'none'; $('editLoading').style.display = 'none';
+    $('btnEdit').disabled = true; editingInitiativeId = null;
     if (!id) return;
 
-    $('editLoading').style.display = 'block';
-    try {
-      const r = await fetch(WORKER_URL + '/api/initiative?initiative_id=' + encodeURIComponent(id));
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || '조회 실패');
+    const cached = initiativeMap.get(id);
+    if (cached) {
       editingInitiativeId = id;
-      $('editTaskName').value = d.name || '';
-      $('editTaskDesc').value = d.description || '';
-      pickers.editOwner?.setIds(d.owner_ids || []);
-      pickers.editParticipant?.setIds(d.participant_ids || []);
-      $('editLoading').style.display = 'none';
+      $('editTaskName').value = cached.name || '';
+      $('editTaskDesc').value = cached.description || '';
+      $('editStatus').value = cached.status || '진행중';
+      populateDaebunryuSel('editDaebunryu', cached.daebunryu_id || '');
+      populateJunbunryuSel('editJunbunryu', cached.daebunryu_id || '', cached.junbunryu_id || '');
+      pickers.editOwner?.setIds(cached.owner_ids || []);
+      pickers.editParticipant?.setIds(cached.participant_ids || []);
       $('editFields').style.display = 'block';
       $('btnEdit').disabled = false;
-    } catch (err) {
-      $('editLoading').style.display = 'none';
-      showStatus('❌ 과제 정보 로드 실패: ' + err.message, 'error');
+    } else {
+      showStatus('❌ 과제 정보를 찾을 수 없습니다. 페이지를 새로고침 해보세요.', 'error');
     }
   });
 
@@ -844,72 +713,61 @@
     if (!editingInitiativeId) { showStatus('❌ 과제를 선택하세요.', 'error'); return; }
     const name = $('editTaskName').value.trim();
     const description = $('editTaskDesc').value;
+    const status = $('editStatus').value;
+    const daebunryuId = $('editDaebunryu').value;
+    const junbunryuId = $('editJunbunryu').value;
     const ownerIds = pickers.editOwner?.getIds() || [];
     const participantIds = pickers.editParticipant?.getIds() || [];
     if (!name) { showStatus('❌ 과제명을 입력하세요.', 'error'); return; }
     if (ownerIds.length === 0) { showStatus('❌ 담당임원을 1명 이상 선택하세요.', 'error'); return; }
 
-    const btn = $('btnEdit');
-    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 수정 중...';
+    const btn = $('btnEdit'); btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 수정 중...';
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initiative_id: editingInitiativeId, name, description, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ initiative_id: editingInitiativeId, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       showStatus('✅ 과제가 수정되었습니다: ' + name, 'success');
-      initiativeMap.set(editingInitiativeId, name);
+      const prev = initiativeMap.get(editingInitiativeId) || {};
+      initiativeMap.set(editingInitiativeId, { ...prev, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, owner_ids: ownerIds, participant_ids: participantIds });
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       refreshManageSelects();
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
-    } catch (err) {
-      showStatus('❌ 수정 실패: ' + err.message, 'error');
-    } finally { btn.disabled = false; btn.innerHTML = orig; }
+    } catch (err) { showStatus('❌ 수정 실패: ' + err.message, 'error'); }
+    finally { btn.disabled = false; btn.innerHTML = orig; }
   });
 
   $('btnEditCancel').addEventListener('click', () => {
-    editingInitiativeId = null;
-    $('editInitiativeSel').value = '';
-    $('editFields').style.display = 'none';
-    $('btnEdit').disabled = true;
-    pickers.editOwner?.reset(); pickers.editParticipant?.reset();
-    hideStatus();
+    editingInitiativeId = null; $('editInitiativeSel').value = '';
+    $('editFields').style.display = 'none'; $('btnEdit').disabled = true;
+    pickers.editOwner?.reset(); pickers.editParticipant?.reset(); hideStatus();
   });
 
   // ─── 과제 삭제 ────────────────────────────────────────────────────
-  $('deleteInitiativeSel').addEventListener('change', function () {
-    $('btnDelete').disabled = !this.value;
-  });
+  $('deleteInitiativeSel').addEventListener('change', function () { $('btnDelete').disabled = !this.value; });
 
   $('deleteForm').addEventListener('submit', async (e) => {
     e.preventDefault(); hideStatus();
-    const id = $('deleteInitiativeSel').value;
-    if (!id) return;
-    const taskName = initiativeMap.get(id) || '(과제)';
+    const id = $('deleteInitiativeSel').value; if (!id) return;
+    const taskName = initiativeMap.get(id)?.name || '(과제)';
     if (!confirm(`정말 삭제(보관처리)할까요?\n\n- ${taskName}\n\n삭제 후에는 되돌리기 어렵습니다.`)) return;
-
-    const btn = $('btnDelete');
-    btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 삭제 중...';
+    const btn = $('btnDelete'); btn.disabled = true; const orig = btn.innerHTML; btn.innerHTML = '⏳ 삭제 중...';
     try {
-      const res = await fetch(WORKER_URL + '/api/initiative', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initiative_id: id }),
-      });
+      const res = await fetch(WORKER_URL + '/api/initiative', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initiative_id: id }) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+      if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       showStatus('✅ 삭제되었습니다: ' + taskName, 'success');
-      initiativeMap.delete(id);
+      initiativeMap.delete(id); $('deleteInitiativeSel').value = '';
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       refreshManageSelects();
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
-    } catch (err) {
-      showStatus('❌ 삭제 실패: ' + err.message, 'error');
-      btn.disabled = false; btn.innerHTML = orig;
-    }
+    } catch (err) { showStatus('❌ 삭제 실패: ' + err.message, 'error'); btn.disabled = false; btn.innerHTML = orig; }
   });
 
-  loadExecutives();
+  // 병렬 초기화
+  Promise.all([loadExecutives(), loadCategories()]);
 </script>
 </body>
 </html>
