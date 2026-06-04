@@ -210,10 +210,13 @@ async function handleInitiatives(executiveId, env) {
     relation: { contains: executiveId },
   }));
 
+  // 삭제 상태 제외 필터
+  const notDeletedFilter = { property: '진행 상태', status: { does_not_equal: '삭제' } };
+
   let pages;
   try {
     pages = await queryAll(env.INITIATIVES_DATA_SOURCE_ID, {
-      filter: { or: orFilters },
+      filter: { and: [{ or: orFilters }, notDeletedFilter] },
       sorts: [{ property: INIT_PROP_NAME, direction: 'ascending' }],
     }, env);
   } catch (e) {
@@ -223,7 +226,7 @@ async function handleInitiatives(executiveId, env) {
     for (const prop of INIT_PROP_OWNER_CANDIDATES) {
       try {
         const part = await queryAll(env.INITIATIVES_DATA_SOURCE_ID, {
-          filter: { property: prop, relation: { contains: executiveId } },
+          filter: { and: [{ property: prop, relation: { contains: executiveId } }, notDeletedFilter] },
           sorts: [{ property: INIT_PROP_NAME, direction: 'ascending' }],
         }, env);
         for (const p of part) {
