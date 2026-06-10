@@ -163,15 +163,15 @@
     </div>
     <div class="header-text">
       <h1 class="header-title">전략과제 관리</h1>
-      <p class="header-sub">업데이트 입력 · 과제 추가/수정/삭제</p>
+      <p class="header-sub">업데이트 · 과제추가/수정/삭제</p>
     </div>
   </header>
 
   <div class="tabs" id="modeTabs" style="display:none">
-    <button type="button" class="tab active" data-mode="progress">업데이트 입력</button>
-    <button type="button" class="tab" data-mode="create">+ 신규 과제</button>
-    <button type="button" class="tab" data-mode="edit">과제 수정</button>
-    <button type="button" class="tab" data-mode="delete">과제 삭제</button>
+    <button type="button" class="tab active" data-mode="progress">업데이트</button>
+    <button type="button" class="tab" data-mode="create" title="Admin 승인 필요">과제추가</button>
+    <button type="button" class="tab" data-mode="edit" title="Admin 승인 필요">과제수정</button>
+    <button type="button" class="tab" data-mode="delete" title="Admin 승인 필요">과제삭제</button>
   </div>
 
   <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -200,11 +200,11 @@
       </select>
     </div>
     <div class="field">
-      <label class="field-label" for="summary">제목 <span class="req">*</span></label>
+      <label class="field-label" for="summary">업데이트 요약 <span class="req">*</span></label>
       <input id="summary" class="input" type="text" required placeholder="예) 인도네시아 금융지주사 본인가 협의 진행 경과" autocomplete="off"/>
     </div>
     <div class="field">
-      <label class="field-label" for="content">업데이트 내용</label>
+      <label class="field-label" for="content">상세 내용</label>
       <textarea id="content" class="textarea" placeholder="예) 금감원 협의 일정 1차 완료. 현지 파트너 후보 3개사 실사 진행 중이며, 5월 말 우선협상 대상자 선정 예정."></textarea>
     </div>
     <div class="field-row">
