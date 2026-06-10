@@ -74,7 +74,9 @@
   .tab:hover { color: var(--text-primary); }
   .tab.active { background: var(--card-bg); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
   .tab-desc { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 14px; }
-  .tab-desc-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
+  .tab-item[data-admin] { position: relative; }
+  .tab-item[data-admin]::after { content: 'Admin 승인 후 반영'; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: rgba(30,30,40,0.92); color: #fff; font-size: 11px; font-weight: 500; white-space: nowrap; padding: 4px 8px; border-radius: 5px; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+  .tab-item[data-admin]:hover::after { opacity: 1; }
   .mode-panel { display: none; }
   .mode-panel.active { display: block; }
 
@@ -173,13 +175,13 @@
     <div class="tab-item">
       <button type="button" class="tab active" data-mode="progress">업데이트</button>
     </div>
-    <div class="tab-item">
+    <div class="tab-item" data-admin>
       <button type="button" class="tab" data-mode="create">과제추가</button>
     </div>
-    <div class="tab-item">
+    <div class="tab-item" data-admin>
       <button type="button" class="tab" data-mode="edit">과제수정</button>
     </div>
-    <div class="tab-item">
+    <div class="tab-item" data-admin>
       <button type="button" class="tab" data-mode="delete">과제삭제</button>
     </div>
   </div>
@@ -440,11 +442,8 @@
     if (mode === 'edit' || mode === 'delete') refreshManageSelects();
     const d = TAB_DESC[mode];
     const el = $('tabDesc');
-    if (d) {
-      const badge = d.admin ? `<span class="admin-badge" style="font-size:10px;font-weight:600;color:#fbbf24;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);border-radius:4px;padding:1px 6px;white-space:nowrap;">Admin 승인 후 반영</span>` : '';
-      el.innerHTML = `<div class="tab-desc-title">${d.title}${badge}</div>${d.text}`;
-      el.style.display = '';
-    } else { el.style.display = 'none'; }
+    if (d) { el.textContent = d.text; el.style.display = ''; }
+    else { el.style.display = 'none'; }
   }
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setMode(t.dataset.mode)));
 

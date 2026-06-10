@@ -73,6 +73,9 @@
   .tab { width: 100%; min-width: max-content; padding: 9px 14px; background: transparent; border: none; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
   .tab:hover { color: var(--text-primary); }
   .tab.active { background: var(--card-bg); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .tab-item[data-admin] { position: relative; }
+  .tab-item[data-admin]::after { content: 'Admin 승인 후 반영'; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: rgba(30,30,40,0.92); color: #fff; font-size: 11px; font-weight: 500; white-space: nowrap; padding: 4px 8px; border-radius: 5px; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+  .tab-item[data-admin]:hover::after { opacity: 1; }
   .mode-panel { display: none; }
   .mode-panel.active { display: block; }
 
@@ -147,13 +150,13 @@
     <div class="tab-item">
       <button type="button" class="tab active" data-mode="progress">업데이트</button>
     </div>
-    <div class="tab-item">
+    <div class="tab-item" data-admin>
       <button type="button" class="tab" data-mode="create">과제추가</button>
     </div>
-    <div class="tab-item">
+    <div class="tab-item" data-admin>
       <button type="button" class="tab" data-mode="edit">과제수정</button>
     </div>
-    <div class="tab-item">
+    <div class="tab-item" data-admin>
       <button type="button" class="tab" data-mode="delete">과제삭제</button>
     </div>
   </div>
