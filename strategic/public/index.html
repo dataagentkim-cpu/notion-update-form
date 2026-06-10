@@ -78,6 +78,8 @@
   .tab-tooltip .admin-badge { font-size: 10px; font-weight: 600; color: #fbbf24; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.35); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
   .tab-item:last-child .tab-tooltip { left: auto; right: 0; }
   .tab-item:hover .tab-tooltip { display: block; }
+  .tab-desc { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 14px; }
+  .tab-desc-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
   .mode-panel { display: none; }
   .mode-panel.active { display: block; }
 
@@ -193,6 +195,8 @@
 
   <div id="status" class="status" role="status" aria-live="polite"></div>
 
+  <div id="tabDesc" class="tab-desc" style="display:none"></div>
+
   <!-- 공통: 작성자/날짜 -->
   <div class="field-row">
     <div class="field">
@@ -252,8 +256,16 @@
       <input id="newTaskName" class="input" type="text" placeholder="예) 무바달라 파트너십 확대" autocomplete="off"/>
     </div>
     <div class="field">
-      <label class="field-label" for="newTaskDesc">세부내용</label>
+      <label class="field-label" for="newTaskBackground">추진 배경</label>
+      <textarea id="newTaskBackground" class="textarea" placeholder="예) 글로벌 소버린 웰스 펀드와의 파트너십 필요성 증대 및 중동 자본 유치 기회 확대"></textarea>
+    </div>
+    <div class="field">
+      <label class="field-label" for="newTaskDesc">추진 내용</label>
       <textarea id="newTaskDesc" class="textarea" placeholder="예) 한국과 동남아의 HNW 사업 공동 추진 (한화투자증권 제휴 방식)"></textarea>
+    </div>
+    <div class="field">
+      <label class="field-label" for="newTaskEffect">기대 효과</label>
+      <textarea id="newTaskEffect" class="textarea" placeholder="예) 중동 자본 유치를 통한 AUM 1조 원 확대 및 글로벌 네트워크 강화"></textarea>
     </div>
     <div class="section-divider"></div>
     <div class="field-row">
@@ -303,8 +315,16 @@
         <input id="editTaskName" class="input" type="text"/>
       </div>
       <div class="field">
-        <label class="field-label" for="editTaskDesc">세부내용</label>
+        <label class="field-label" for="editTaskBackground">추진 배경</label>
+        <textarea id="editTaskBackground" class="textarea"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" for="editTaskDesc">추진 내용</label>
         <textarea id="editTaskDesc" class="textarea"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" for="editTaskEffect">기대 효과</label>
+        <textarea id="editTaskEffect" class="textarea"></textarea>
       </div>
       <div class="field">
         <label class="field-label" for="editStatus">진행 상태</label>
@@ -414,12 +434,26 @@
 
   $('modeTabs').style.display = '';
 
+  const TAB_DESC = {
+    progress: { title: '업데이트 (Update)', text: '과제의 진행 현황, 주요 성과, 이슈 및 향후 계획 등을 관련 임원이 수시로 입력하고 수정할 수 있는 기능. 모든 변경 사항은 실시간으로 공유되어 조직 내 정보 비대칭과 부서 간 Silo를 최소화하며, 과제 추진 과정의 투명성을 높이고 협업 강화', admin: false },
+    create:   { title: '과제 추가 (Create)', text: '경영진으로부터 신규 부여받은 전략과제를 등록하는 기능. 과제의 추진 배경, 추진 내용, 기대효과 등을 체계적으로 정의하여 관리할 수 있으며, 신규 과제를 조직 내에 신속하게 공유함으로써 관련 부서 간 협업과 실행력 제고', admin: true },
+    edit:     { title: '과제 수정 (Modify)', text: '외부 환경의 변화와 내부 전략 우선순위 조정 등에 따라 기존 과제를 새로운 과제로 피벗하거나 담당임원, 진행 상태 등을 재정의. 과제가 변화하는 경영 환경에 유연하게 대응할 수 있도록 하고, 전략적 방향성과 실행력을 지속적으로 유지', admin: true },
+    delete:   { title: '과제 삭제 (Delete)', text: '환경 변화, 사업적 타당성 감소 등의 사유로 더 이상 추진이 필요하지 않은 과제를 종료하는 기능. 종료 사유와 의사결정 이력을 기록하여 관리의 투명성을 확보하고, 한정된 자원을 보다 중요한 전략과제에 집중할 수 있도록 지원', admin: true },
+  };
+
   function setMode(mode) {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
     document.querySelectorAll('.mode-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === mode));
     $('dateField').style.display = mode === 'progress' ? '' : 'none';
     hideStatus();
     if (mode === 'edit' || mode === 'delete') refreshManageSelects();
+    const d = TAB_DESC[mode];
+    const el = $('tabDesc');
+    if (d) {
+      const badge = d.admin ? `<span class="admin-badge" style="font-size:10px;font-weight:600;color:#fbbf24;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);border-radius:4px;padding:1px 6px;white-space:nowrap;">Admin 승인 후 반영</span>` : '';
+      el.innerHTML = `<div class="tab-desc-title">${d.title}${badge}</div>${d.text}`;
+      el.style.display = '';
+    } else { el.style.display = 'none'; }
   }
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setMode(t.dataset.mode)));
 
@@ -753,7 +787,9 @@
   $('createForm').addEventListener('submit', async (e) => {
     e.preventDefault(); hideStatus();
     const name = $('newTaskName').value.trim();
+    const background = $('newTaskBackground').value.trim();
     const description = $('newTaskDesc').value.trim();
+    const expected_effect = $('newTaskEffect').value.trim();
     const daebunryuId = $('newDaebunryu').value;
     const junbunryuId = $('newJunbunryu').value;
     const departmentId = $('newDepartment').value;
@@ -768,21 +804,21 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ name, background, description, expected_effect, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       showStatus('✅ 신규 전략과제가 생성되었습니다: ' + name, 'success');
-      $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = ''; $('newDepartment').value = ''; $('newTaskNumber').value = '';
+      $('newTaskName').value = ''; $('newTaskBackground').value = ''; $('newTaskDesc').value = ''; $('newTaskEffect').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = ''; $('newDepartment').value = ''; $('newTaskNumber').value = '';
       pickers.createOwner?.reset(); pickers.createParticipant?.reset();
-      if (data.page_id) initiativeMap.set(data.page_id, { name, description, owner_ids: ownerIds, participant_ids: participantIds, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, status: '진행중' });
+      if (data.page_id) initiativeMap.set(data.page_id, { name, background, description, expected_effect, owner_ids: ownerIds, participant_ids: participantIds, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, status: '진행중' });
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);
     } catch (err) { showStatus('❌ 생성 실패: ' + err.message, 'error'); }
     finally { btn.disabled = false; btn.innerHTML = orig; }
   });
   $('btnCreateReset').addEventListener('click', () => {
-    $('newTaskName').value = ''; $('newTaskDesc').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = ''; $('newDepartment').value = ''; $('newTaskNumber').value = '';
+    $('newTaskName').value = ''; $('newTaskBackground').value = ''; $('newTaskDesc').value = ''; $('newTaskEffect').value = ''; $('newDaebunryu').value = ''; $('newJunbunryu').value = ''; $('newDepartment').value = ''; $('newTaskNumber').value = '';
     pickers.createOwner?.reset(); pickers.createParticipant?.reset(); hideStatus();
   });
 
@@ -798,8 +834,10 @@
     const cached = initiativeMap.get(id);
     if (cached) {
       editingInitiativeId = id;
-      $('editTaskName').value = cached.name || '';
-      $('editTaskDesc').value = cached.description || '';
+      $('editTaskName').value       = cached.name            || '';
+      $('editTaskBackground').value = cached.background      || '';
+      $('editTaskDesc').value       = cached.description     || '';
+      $('editTaskEffect').value     = cached.expected_effect || '';
       $('editStatus').value = cached.status || '진행중';
       populateDaebunryuSel('editDaebunryu', cached.daebunryu_id || '');
       populateJunbunryuSel('editJunbunryu', cached.daebunryu_id || '', cached.junbunryu_id || '');
@@ -818,7 +856,9 @@
     e.preventDefault(); hideStatus();
     if (!editingInitiativeId) { showStatus('❌ 과제를 선택하세요.', 'error'); return; }
     const name = $('editTaskName').value.trim();
+    const background = $('editTaskBackground').value;
     const description = $('editTaskDesc').value;
+    const expected_effect = $('editTaskEffect').value;
     const status = $('editStatus').value;
     const daebunryuId = $('editDaebunryu').value;
     const junbunryuId = $('editJunbunryu').value;
@@ -833,13 +873,13 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initiative_id: editingInitiativeId, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ initiative_id: editingInitiativeId, name, background, description, expected_effect, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       showStatus('✅ 과제가 수정되었습니다: ' + name, 'success');
       const prev = initiativeMap.get(editingInitiativeId) || {};
-      initiativeMap.set(editingInitiativeId, { ...prev, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds });
+      initiativeMap.set(editingInitiativeId, { ...prev, name, background, description, expected_effect, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds });
       populateInitiativeSel('initiativeSel', '전략과제를 선택하세요');
       refreshManageSelects();
       setTimeout(() => loadInitiatives(currentAuthorId), 1500);

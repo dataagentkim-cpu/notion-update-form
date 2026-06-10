@@ -244,7 +244,9 @@ async function handleInitiatives(executiveId, env) {
         name: readTitle(p, INIT_PROP_NAME),
         owner_ids: (props['담당 임원']?.relation || []).map((r) => r.id),
         participant_ids: (props['참여 임원']?.relation || []).map((r) => r.id),
-        description: (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join(''),
+        description:  (props[INIT_PROP_DESC]?.rich_text       || []).map((s) => s.plain_text || '').join(''),
+        background:   (props[INIT_PROP_BACKGROUND]?.rich_text || []).map((s) => s.plain_text || '').join(''),
+        expected_effect: (props[INIT_PROP_EFFECT]?.rich_text  || []).map((s) => s.plain_text || '').join(''),
         daebunryu_id: (props['전략과제_대분류']?.relation || [])[0]?.id || '',
         junbunryu_id: (props['전략과제_중분류']?.relation || [])[0]?.id || '',
         department_id: (props['부문']?.relation || [])[0]?.id || '',
@@ -736,7 +738,9 @@ async function handleCategories(env) {
 }
 
 // ─── 전략과제 마스터 CRUD ────────────────────────────────────────────────────
-const INIT_PROP_DESC = '세부내용';
+const INIT_PROP_DESC        = '세부내용';
+const INIT_PROP_BACKGROUND  = '추진 배경';
+const INIT_PROP_EFFECT      = '기대 효과';
 
 async function handleInitiativeGet(initiativeId, env) {
   if (!initiativeId) return { error: 'initiative_id 필요.' };
@@ -746,13 +750,15 @@ async function handleInitiativeGet(initiativeId, env) {
     const name = readTitle(page, INIT_PROP_NAME);
     const ownerIds = (props['담당 임원']?.relation || []).map((r) => r.id);
     const participantIds = (props['참여 임원']?.relation || []).map((r) => r.id);
-    const description = (props[INIT_PROP_DESC]?.rich_text || []).map((s) => s.plain_text || '').join('');
+    const description    = (props[INIT_PROP_DESC]?.rich_text       || []).map((s) => s.plain_text || '').join('');
+    const background     = (props[INIT_PROP_BACKGROUND]?.rich_text || []).map((s) => s.plain_text || '').join('');
+    const expected_effect= (props[INIT_PROP_EFFECT]?.rich_text     || []).map((s) => s.plain_text || '').join('');
     const daebunryuId = (props['전략과제_대분류']?.relation || [])[0]?.id || '';
     const junbunryuId = (props['전략과제_중분류']?.relation || [])[0]?.id || '';
     const departmentId = (props['부문']?.relation || [])[0]?.id || '';
     const taskNumber = (props['과제번호']?.rich_text || []).map((s) => s.plain_text || '').join('');
     const status = props['진행 상태']?.status?.name || '';
-    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, status };
+    return { ok: true, name, owner_ids: ownerIds, participant_ids: participantIds, description, background, expected_effect, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, status };
   } catch (e) {
     return { error: `과제 조회 실패: ${e.message}` };
   }
@@ -766,7 +772,9 @@ async function handleInitiativeCreate(request, env) {
   const name = (body.name || '').trim();
   const ownerIds = Array.isArray(body.owner_ids) ? body.owner_ids : [];
   const participantIds = Array.isArray(body.participant_ids) ? body.participant_ids : [];
-  const description = (body.description || '').trim();
+  const description     = (body.description     || '').trim();
+  const background      = (body.background      || '').trim();
+  const expected_effect = (body.expected_effect || '').trim();
   const daebunryuId = (body.daebunryu_id || '').trim();
   const junbunryuId = (body.junbunryu_id || '').trim();
   const departmentId = (body.department_id || '').trim();
@@ -794,9 +802,9 @@ async function handleInitiativeCreate(request, env) {
   if (taskNumber) {
     properties['과제번호'] = { rich_text: [{ text: { content: taskNumber } }] };
   }
-  if (description) {
-    properties[INIT_PROP_DESC] = { rich_text: [{ text: { content: description } }] };
-  }
+  if (description)     properties[INIT_PROP_DESC]       = { rich_text: [{ text: { content: description } }] };
+  if (background)      properties[INIT_PROP_BACKGROUND] = { rich_text: [{ text: { content: background } }] };
+  if (expected_effect) properties[INIT_PROP_EFFECT]     = { rich_text: [{ text: { content: expected_effect } }] };
 
   try {
     const created = await notion('/pages', {
@@ -821,7 +829,9 @@ async function handleInitiativeUpdate(request, env) {
   const name = (body.name || '').trim();
   const ownerIds = body.owner_ids != null ? (Array.isArray(body.owner_ids) ? body.owner_ids : []) : null;
   const participantIds = body.participant_ids != null ? (Array.isArray(body.participant_ids) ? body.participant_ids : []) : null;
-  const description = body.description != null ? String(body.description) : null;
+  const description     = body.description     != null ? String(body.description)     : null;
+  const background      = body.background      != null ? String(body.background)      : null;
+  const expected_effect = body.expected_effect != null ? String(body.expected_effect) : null;
   const daebunryuId = body.daebunryu_id != null ? (body.daebunryu_id || '').trim() : null;
   const junbunryuId = body.junbunryu_id != null ? (body.junbunryu_id || '').trim() : null;
   const status = (body.status || '').trim();
@@ -834,9 +844,9 @@ async function handleInitiativeUpdate(request, env) {
   if (name) properties[INIT_PROP_NAME] = { title: [{ text: { content: name } }] };
   if (ownerIds !== null) properties['담당 임원'] = { relation: ownerIds.map((id) => ({ id })) };
   if (participantIds !== null) properties['참여 임원'] = { relation: participantIds.map((id) => ({ id })) };
-  if (description !== null) {
-    properties[INIT_PROP_DESC] = { rich_text: description ? [{ text: { content: description } }] : [] };
-  }
+  if (description !== null)     properties[INIT_PROP_DESC]       = { rich_text: description     ? [{ text: { content: description } }]     : [] };
+  if (background !== null)      properties[INIT_PROP_BACKGROUND] = { rich_text: background      ? [{ text: { content: background } }]      : [] };
+  if (expected_effect !== null) properties[INIT_PROP_EFFECT]     = { rich_text: expected_effect ? [{ text: { content: expected_effect } }] : [] };
   const departmentId = body.department_id != null ? (body.department_id || '').trim() : null;
   const taskNumber = body.task_number != null ? String(body.task_number) : null;
 
