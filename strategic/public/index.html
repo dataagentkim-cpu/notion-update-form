@@ -443,7 +443,6 @@
   const urlMode = (urlParams.get('mode') || '').trim();
 
   $('modeTabs').style.display = '';
-
   const TAB_DESC = {
     progress: { title: '업데이트 (Update)', text: '과제의 진행 현황, 주요 성과, 이슈 및 향후 계획 등을 관련 임원이 수시로 입력하고 수정할 수 있는 기능. 모든 변경 사항은 실시간으로 공유되어 조직 내 정보 비대칭과 부서 간 Silo를 최소화하며, 과제 추진 과정의 투명성을 높이고 협업 강화', admin: false },
     create:   { title: '과제 추가 (Create)', text: '경영진으로부터 신규 부여받은 전략과제를 등록하는 기능. 과제의 추진 배경, 추진 내용, 기대효과 등을 체계적으로 정의하여 관리할 수 있으며, 신규 과제를 조직 내에 신속하게 공유함으로써 관련 부서 간 협업과 실행력 제고', admin: true },
@@ -463,6 +462,7 @@
     else { el.style.display = 'none'; }
   }
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setMode(t.dataset.mode)));
+  setMode('progress');
 
   const offsetMs = new Date().getTimezoneOffset() * 60000;
   const todayStr = () => new Date(Date.now() - offsetMs).toISOString().slice(0, 10);
