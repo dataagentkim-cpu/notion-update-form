@@ -247,6 +247,7 @@ async function handleInitiatives(executiveId, env) {
         description:  (props[INIT_PROP_DESC]?.rich_text       || []).map((s) => s.plain_text || '').join(''),
         background:   (props[INIT_PROP_BACKGROUND]?.rich_text || []).map((s) => s.plain_text || '').join(''),
         expected_effect: (props[INIT_PROP_EFFECT]?.rich_text  || []).map((s) => s.plain_text || '').join(''),
+        progress: props['진척도']?.select?.name || '',
         daebunryu_id: (props['전략과제_대분류']?.relation || [])[0]?.id || '',
         junbunryu_id: (props['전략과제_중분류']?.relation || [])[0]?.id || '',
         department_id: (props['부문']?.relation || [])[0]?.id || '',
@@ -272,6 +273,7 @@ async function handleSave(request, env) {
   const dateStr = (body.date || '').trim();
   const priority = (body.priority || '과제이력 관리').trim(); // 대시보드 게시 / 과제이력 관리 (디폴트 후자)
   const fileUploads = Array.isArray(body.file_uploads) ? body.file_uploads : []; // [{id,name}]
+  const newProgress = (body.new_progress || '').trim();
 
   if (!initiativeId) return { error: '전략과제를 선택하세요.' };
   if (!authorId)    return { error: '작성자(임원)를 선택하세요.' };
@@ -313,6 +315,18 @@ async function handleSave(request, env) {
       properties,
     }),
   }, env);
+
+  // 진척도 업데이트 (요청된 경우)
+  if (newProgress && initiativeId) {
+    try {
+      await notion(`/pages/${initiativeId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ properties: { '진척도': { select: { name: newProgress } } } }),
+      }, env);
+    } catch (e) {
+      warnings.push(`진척도 업데이트 실패: ${e.message}`);
+    }
+  }
 
   return {
     ok: true,

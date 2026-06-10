@@ -213,6 +213,23 @@
         <option value="">먼저 작성자를 선택하세요</option>
       </select>
     </div>
+    <div class="field" id="progressField" style="display:none">
+      <label class="field-label" for="updateProgress">진척도</label>
+      <select id="updateProgress" class="select">
+        <option value="">변경 안함</option>
+        <option value="⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 0%">⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 0%</option>
+        <option value="🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 10%">🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 10%</option>
+        <option value="🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 20%">🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 20%</option>
+        <option value="🟩🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 30%">🟩🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 30%</option>
+        <option value="🟩🟩🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️ 40%">🟩🟩🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️ 40%</option>
+        <option value="🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️⬜️ 50%">🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️⬜️ 50%</option>
+        <option value="🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️ 60%">🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️ 60%</option>
+        <option value="🟩🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️ 70%">🟩🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️ 70%</option>
+        <option value="🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%">🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️ 80%</option>
+        <option value="🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️ 90%">🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️ 90%</option>
+        <option value="🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩 100%">🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩 100%</option>
+      </select>
+    </div>
     <div class="field">
       <label class="field-label" for="summary">업데이트 요약 <span class="req">*</span></label>
       <input id="summary" class="input" type="text" required placeholder="예) 인도네시아 금융지주사 본인가 협의 진행 경과" autocomplete="off"/>
@@ -708,10 +725,21 @@
   const btnAI = $('btnAI');
   function resetAIButton() { originalDraft = null; btnAI.dataset.mode = ''; btnAI.innerHTML = '✨ AI로 다듬기'; }
 
+  $('initiativeSel').addEventListener('change', function () {
+    const id = this.value;
+    const cached = id ? initiativeMap.get(id) : null;
+    if (id) {
+      $('updateProgress').value = cached?.progress || '';
+      $('progressField').style.display = '';
+    } else {
+      $('progressField').style.display = 'none';
+    }
+  });
+
   $('btnReset').addEventListener('click', () => {
     $('summary').value = ''; $('content').value = ''; $('date').value = todayStr();
     $('priority').value = '대시보드 게시'; $('files').value = ''; $('filesStatus').textContent = '';
-    $('initiativeSel').value = ''; resetAIButton(); hideStatus();
+    $('initiativeSel').value = ''; $('progressField').style.display = 'none'; resetAIButton(); hideStatus();
   });
   $('files').addEventListener('change', () => {
     const fs = $('files').files; $('filesStatus').textContent = fs && fs.length ? `${fs.length}개 선택됨` : '';
@@ -761,6 +789,7 @@
       author_id: currentAuthorId, author_name: executiveMap.get(currentAuthorId) || '',
       summary: $('summary').value.trim(), content: $('content').value.trim(),
       date: $('date').value, priority: $('priority').value || '대시보드 게시', file_uploads: fileUploads,
+      new_progress: $('progressField').style.display !== 'none' ? $('updateProgress').value : '',
     };
     try {
       const res = await fetch(WORKER_URL + '/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -768,6 +797,10 @@
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       const warnings = (data.warnings || []).join(' / ');
       showStatus('✅ 업데이트가 제출되었습니다.' + (warnings ? ' (' + warnings + ')' : ''), 'success');
+      if (payload.new_progress && initiativeMap.has(initiativeId)) {
+        const prev = initiativeMap.get(initiativeId);
+        initiativeMap.set(initiativeId, { ...prev, progress: payload.new_progress });
+      }
       $('summary').value = ''; $('content').value = ''; $('priority').value = '대시보드 게시'; $('files').value = ''; filesStatus.textContent = ''; resetAIButton();
     } catch (err) { showStatus('❌ 제출 실패: ' + err.message, 'error'); }
     finally { btnSave.disabled = false; btnSave.innerHTML = origText; }
