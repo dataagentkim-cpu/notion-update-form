@@ -889,6 +889,7 @@ async function handleInitiativeDelete(request, env) {
   catch { return { error: '본문이 올바른 JSON이 아닙니다.' }; }
 
   const initiativeId = (body.initiative_id || '').trim();
+  const reason = (body.reason || '').trim();
   if (!initiativeId) return { error: 'initiative_id 필요.' };
 
   // 상태를 '삭제'로 변경하고 담당/참여 임원 relation을 비워
@@ -917,6 +918,18 @@ async function handleInitiativeDelete(request, env) {
       if (cur2 !== '삭제') {
         return { ok: false, warning: `상태가 자동화에 의해 복원됨 (현재: ${cur2}). 노션 자동화 규칙 확인 필요.` };
       }
+    }
+    // 삭제 사유가 있으면 페이지 댓글로 기록
+    if (reason) {
+      try {
+        await notion('/comments', {
+          method: 'POST',
+          body: JSON.stringify({
+            parent: { page_id: initiativeId },
+            rich_text: [{ text: { content: `[삭제 사유] ${reason}` } }],
+          }),
+        }, env);
+      } catch { /* 댓글 실패는 무시 */ }
     }
     return { ok: true };
   } catch (e) {

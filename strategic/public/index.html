@@ -325,16 +325,8 @@
         <input id="editTaskName" class="input" type="text"/>
       </div>
       <div class="field">
-        <label class="field-label" for="editTaskBackground">추진 배경</label>
-        <textarea id="editTaskBackground" class="textarea"></textarea>
-      </div>
-      <div class="field">
         <label class="field-label" for="editTaskDesc">추진 내용</label>
         <textarea id="editTaskDesc" class="textarea"></textarea>
-      </div>
-      <div class="field">
-        <label class="field-label" for="editTaskEffect">기대 효과</label>
-        <textarea id="editTaskEffect" class="textarea"></textarea>
       </div>
       <div class="field">
         <label class="field-label" for="editStatus">진행 상태</label>
@@ -388,6 +380,11 @@
     <div class="field">
       <label class="field-label" for="deleteInitiativeSel">삭제할 과제 선택 <span class="req">*</span></label>
       <select id="deleteInitiativeSel" class="select"><option value="">과제를 선택하세요</option></select>
+    </div>
+    <!-- 삭제 사유 -->
+    <div id="deleteReasonField" class="field" style="display:none">
+      <label class="field-label" for="deleteReason">삭제 사유</label>
+      <textarea id="deleteReason" class="textarea" placeholder="예) 외부 환경 변화로 사업 타당성 감소, 경영진 의사결정으로 과제 종료"></textarea>
     </div>
     <!-- 1단계: 삭제 버튼 -->
     <div id="deleteStep1" class="actions" style="display:none">
@@ -857,10 +854,8 @@
     const cached = initiativeMap.get(id);
     if (cached) {
       editingInitiativeId = id;
-      $('editTaskName').value       = cached.name            || '';
-      $('editTaskBackground').value = cached.background      || '';
-      $('editTaskDesc').value       = cached.description     || '';
-      $('editTaskEffect').value     = cached.expected_effect || '';
+      $('editTaskName').value = cached.name        || '';
+      $('editTaskDesc').value = cached.description || '';
       $('editStatus').value = cached.status || '진행중';
       populateDaebunryuSel('editDaebunryu', cached.daebunryu_id || '');
       populateJunbunryuSel('editJunbunryu', cached.daebunryu_id || '', cached.junbunryu_id || '');
@@ -879,9 +874,7 @@
     e.preventDefault(); hideStatus();
     if (!editingInitiativeId) { showStatus('❌ 과제를 선택하세요.', 'error'); return; }
     const name = $('editTaskName').value.trim();
-    const background = $('editTaskBackground').value;
     const description = $('editTaskDesc').value;
-    const expected_effect = $('editTaskEffect').value;
     const status = $('editStatus').value;
     const daebunryuId = $('editDaebunryu').value;
     const junbunryuId = $('editJunbunryu').value;
@@ -896,7 +889,7 @@
     try {
       const res = await fetch(WORKER_URL + '/api/initiative', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initiative_id: editingInitiativeId, name, background, description, expected_effect, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
+        body: JSON.stringify({ initiative_id: editingInitiativeId, name, description, status, daebunryu_id: daebunryuId, junbunryu_id: junbunryuId, department_id: departmentId, task_number: taskNumber, owner_ids: ownerIds, participant_ids: participantIds }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
@@ -920,13 +913,18 @@
   function resetDeletePanel() {
     $('deleteStep1').style.display = 'none';
     $('deleteStep2').style.display = 'none';
+    $('deleteReasonField').style.display = 'none';
+    $('deleteReason').value = '';
     $('deleteConfirmName').textContent = '';
   }
 
   $('deleteInitiativeSel').addEventListener('change', function () {
     hideStatus();
     resetDeletePanel();
-    if (this.value) $('deleteStep1').style.display = '';
+    if (this.value) {
+      $('deleteReasonField').style.display = '';
+      $('deleteStep1').style.display = '';
+    }
   });
 
   // 1단계: 삭제 버튼 → 확인 UI 표시
@@ -954,7 +952,8 @@
     $('btnDeleteCancel').disabled = true;
     hideStatus();
     try {
-      const res = await fetch(WORKER_URL + '/api/initiative', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initiative_id: id }) });
+      const reason = $('deleteReason').value.trim();
+      const res = await fetch(WORKER_URL + '/api/initiative', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initiative_id: id, reason }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '서버 오류 ' + res.status);
       if (data.warning) { showStatus('⚠ ' + data.warning, 'error'); btn.disabled = false; btn.innerHTML = '🗑 삭제 확인'; $('btnDeleteCancel').disabled = false; return; }
