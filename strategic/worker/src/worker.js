@@ -307,6 +307,9 @@ async function handleSave(request, env) {
   if (dateStr) {
     properties[SU_PROP_DATE] = { date: { start: dateStr } };
   }
+  if (newProgress) {
+    properties['업데이트 이력 진척도'] = { select: { name: newProgress } };
+  }
 
   const created = await notion('/pages', {
     method: 'POST',
